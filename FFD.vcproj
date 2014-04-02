@@ -183,14 +183,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Copy of solver_gs.c"
-				>
-			</File>
-			<File
-				RelativePath=".\cprojection.c"
-				>
-			</File>
-			<File
 				RelativePath=".\demo.c"
 				>
 			</File>
@@ -258,10 +250,6 @@
 			</File>
 			<File
 				RelativePath=".\chen_zero_equ_model.h"
-				>
-			</File>
-			<File
-				RelativePath=".\cprojection.h"
 				>
 			</File>
 			<File
