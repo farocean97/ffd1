@@ -13,7 +13,7 @@
 ///
 /// \date   8/3/2013
 ///
-/// This file provides functions that used for the advection step of FFD method.
+/// This file provides functions that used for the setting boundary for FFD.
 /// The advection starts with \c advect(). Then different subroutines are 
 /// called according to the properties of the variables that are sorted by
 /// the location of variables assigned in the control volume. 
