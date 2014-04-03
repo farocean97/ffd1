@@ -200,7 +200,6 @@ typedef struct{
   REAL  t_bc[200];
   REAL  fltmp[200];
   REAL  um_bc[200];
-
 }BC_DATA;
 
 typedef struct 

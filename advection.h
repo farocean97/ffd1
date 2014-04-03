@@ -11,7 +11,7 @@
 ///         University of Miami
 ///         W.Zuo@miami.edu
 ///
-/// \date   8/3/2013
+/// \date   04/02/2014
 ///
 /// This file provides functions that used for the advection step of FFD method.
 /// The advection starts with \c advect(). Then different subroutines are 
@@ -25,11 +25,31 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// Entrance of advection step
+///
+/// Specific method for advection will be selected according to the variable 
+/// type.
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param var_type The type of variable for advection solver
+///\param flag Pointer to the cell flag
+///\param d Pointer to the computed variables at previous time step
+///\param d0 Pointer to the computed variables for current time step
+///\param BINDEX Pointer to boundary index
+///
+///\return 0 if no error occurred
+///////////////////////////////////////////////////////////////////////////////
+void advection(PARA_DATA *para, REAL **var, int var_type,
+                REAL *flag, REAL *d, REAL *d0, int **BINDEX);
+
 void traceback(PARA_DATA *para, REAL **var, int **BINDEX);
 void traceback_UVW(PARA_DATA *para, REAL **var, int var_type, REAL *flag, int **BINDEX);
 
-void advection(PARA_DATA *para, REAL **var, int var_type,
-                REAL *flag, REAL *d, REAL *d0, int **BINDEX);
+
 
 void XLOCATION(PARA_DATA *para, REAL **var,  REAL *flag, 
                REAL *x, REAL u0, int i, int j, int k,  
