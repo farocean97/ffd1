@@ -198,8 +198,10 @@ typedef struct{
   REAL  v_bc[200];
   REAL  w_bc[200];
   REAL  t_bc[200];
+  REAL  d_bc[200];
   REAL  fltmp[200];
   REAL  um_bc[200];
+  REAL  zv_bc[200];
 }BC_DATA;
 
 typedef struct 

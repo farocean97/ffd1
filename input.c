@@ -54,7 +54,9 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   int NBIN, NBOUT, NBL, NW;
   int NBUS,NBS;
   int SI,SJ,SK,EI,EJ,EK,NI,NJ,NK,FLTMP;
-  float TMP,MASS,U,V,W;
+  float TMP,MOMENT,U,V,W;
+  float CONCENT;
+  float ZV;
   int restart;
   float density,nu,cp,gravx,gravy,gravz,beta,trefmax,spec;
   float t_start,t_delta,t_total;
@@ -158,7 +160,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
     for(i=1;i<=NBIN;i++) {
       fgets(string, 400, file_params);
       sscanf(string,"%d%d%d%d%d%d%f%f%f%f%f",&SI,&SJ,&SK ,&NI,&NJ,
-                                              &NK ,&TMP ,&MASS ,&U ,&V ,&W );
+                                              &NK ,&TMP ,&CONCENT,&MOMENT ,&U ,&V ,&W );
       if(SI !=0) SI -= 1;
       if(SJ !=0) SJ -= 1;
       if(SK !=0) SK -= 1;
@@ -176,7 +178,8 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
       para->bc->v_bc[zone_num+i]=V;
       para->bc->w_bc[zone_num+i]=W;
       para->bc->t_bc[zone_num+i]=TMP;
-      para->bc->um_bc[zone_num+i]=MASS;
+      para->bc->d_bc[zone_num+i]=CONCENT;
+      para->bc->um_bc[zone_num+i]=MOMENT;
     }
   }//end NBIN
       
@@ -194,7 +197,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
     for(i=1;i<=NBOUT;i++)  {
       fgets(string, 400, file_params);
       sscanf(string,"%d%d%d%d%d%d%f%f%f%f%f",&SI,&SJ,&SK ,&NI,&NJ,
-                                             &NK ,&TMP ,&MASS ,&U ,&V ,&W );
+                                             &NK ,&TMP , &CONCENT, &MOMENT ,&U ,&V ,&W );
       if(SI !=0) SI -= 1;
       if(SJ !=0) SJ -= 1;
       if(SK !=0) SK -= 1;
@@ -212,6 +215,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
       para->bc->v_bc[zone_num+i]=V;
       para->bc->w_bc[zone_num+i]=W;
       para->bc->t_bc[zone_num+i]=TMP;
+      para->bc->d_bc[zone_num+i]=CONCENT;
     }
   }
 
@@ -287,7 +291,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   if(NBUS !=0) {
     for(i=1;i<=NBUS;i++) {
       fgets(string, 400, file_params);
-      sscanf(string,"%d%d%d%d%d%d%f",&SI,&SJ,&SK ,&NI,&NJ ,&NK , &TMP);
+      sscanf(string,"%d%d%d%d%d%d%f",&SI,&SJ,&SK ,&NI,&NJ ,&NK ,&CONCENT,&ZV, &TMP);
 
       if(SI !=0) SI -= 1;
       if(SJ !=0) SJ -= 1;
@@ -302,6 +306,8 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
       BINDEX[10][zone_num+i]= EJ;
       BINDEX[11][zone_num+i]= SK;
       BINDEX[12][zone_num+i]= EK;
+      para->bc->d_bc[zone_num+i]=CONCENT;
+      para->bc->zv_bc[zone_num+i]=ZV;
       para->bc->t_bc[zone_num+i]=TMP/(REAL)(NI*NJ*NK);
       para->bc->qs +=TMP;
     }
