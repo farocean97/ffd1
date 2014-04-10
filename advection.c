@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// \file   advection.h
+/// \file   advection.c
 ///
 /// \brief  Solver for advection step
 ///
@@ -19,12 +19,11 @@
 /// the location of variables assigned in the control volume. 
 /// Velocities at X, Y and Z directions are locatted
 /// on the surface of the control volume. They are computed using 
-/// subroutines: \c traceback_uvw
+/// subroutines: \c traceback_uvw()
 /// Scalar variables are in the center of control volume and they are computed
-/// using \c traceback.
+/// using \c traceback().
 ///
 ///////////////////////////////////////////////////////////////////////////////
-
 
 
 #include <math.h>
@@ -37,7 +36,7 @@
 #include "interpolation.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Entrance of advection step
+///\brief  Entrance of advection step
 ///
 /// Specific method for advection will be selected according to the variable 
 /// type.
@@ -150,7 +149,7 @@ void advection(PARA_DATA *para, REAL **var, int var_type,
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Traceback for the variable at cell center
+/// \brief Traceback for the variable at cell center
 ///
 ///\param para Pointer to FFD parameters
 ///\param var Pointer to FFD simulation variables
@@ -243,7 +242,7 @@ void traceback(PARA_DATA *para, REAL **var, int **BINDEX){
 }//End of traceback()
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Traceback for the variable at cell surfaces
+///\brief Traceback for the variable at cell surfaces
 ///
 ///\param para Pointer to FFD parameters
 ///\param var Pointer to FFD simulation variables
@@ -475,23 +474,42 @@ void XLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *x, REAL u0,
   if(OL[X]==x[FIX(OC[X],OC[Y],OC[Z])]){
     COOD[X]=0;
   }
-  //if U>0, 
+  //if U>0,start searching cells on the left
   else if(OL[X]<x[FIX(OC[X],OC[Y],OC[Z])])
   {
+    //if the cell index is larger than zero, keep searching.
     if(OC[X]>0) OC[X] -=1;
+
+    //if the cell coordiate is smaller than that of departure point, 
+    //stop searching and set COOD[X]=0
     if(OL[X]>=x[FIX(OC[X],OC[Y],OC[Z])]) COOD[X]=0;
+
+    //if the cell flag shows the cell is solid(flag>0) or pass 
+    //through wall partiions(flagu==4), stop searching in x direciton
+    //set COOD=0,and assign LOC=0 
+    //reset the cell index to the one next to the bounary cell so that trace
+    //back in other directions can still continue.
     if(flag[FIX(OC[X],OC[Y],OC[Z])]>0 || flagu[FIX(OC[X],OC[Y],OC[Z])]==4){
-      if(flagu[FIX(OC[X],OC[Y],OC[Z])]==0){
-       if(OL[X]<x[FIX(OC[X],OC[Y],OC[Z])]) OL[X]=x[FIX(OC[X],OC[Y],OC[Z])];
-      }
-      else {
-        OL[X]=x[FIX(OC[X]+1,OC[Y],OC[Z])];
-      }
+
       LOC[X]=0;
       COOD[X]=0;
       OC[X] +=1;
+
+      //if the cell flag shows inlet and the traceback crosses the inlet cell,
+      //reset the departure coordinate to that of the inlet cell 
+      if(flagu[FIX(OC[X],OC[Y],OC[Z])]==0){
+        if(OL[X]<x[FIX(OC[X],OC[Y],OC[Z])]) OL[X]=x[FIX(OC[X],OC[Y],OC[Z])];
+      }
+
+      //if the cell is not inlet, reset the departure coordinate to the one next
+      //to the inlet cell
+      else {
+        OL[X]=x[FIX(OC[X]+1,OC[Y],OC[Z])];
+      }
     }
   }
+
+  //if the U<0, then search to the right direction.
   else {
     if(OC[X]<=imax) OC[X] +=1;
     if(OL[X] <=x[FIX(OC[X],OC[Y],OC[Z])]) COOD[X]=0;

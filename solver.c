@@ -87,12 +87,6 @@ void FFD_solver(PARA_DATA *para, REAL **var,int **BINDEX)
       vel_step(para, var, BINDEX);
       temp_step(para, var,BINDEX);
       timing(para);
-    //  printf("ventilation rate=%f\n",check_mass_V(para, var,i1, i2,j1,j2,k1,k2));
-    //fprintf(file4,"%f\t%f\n",check_mass_V(para, var,5, 5,4,4,8,8),check_mass_V(para, var,i1, i2,j1,j2,k1,k2));
-      //fprintf(file4,"%f\t%f\n",check_mass_in(para, var,4, 4,1,5,6,6),check_mass_out(para, var,4, 4,1,5,6,6));      //6,6
-      //fprintf(file4,"%f\t%f\n",check_mass_in(para, var,8, 8,1,13,14,19),check_mass_out(para, var,8, 8,1,13,14,19)); 
-     // fprintf(file4,"%f\t%f\n",check_mass_in(para, var,4, 4,1,7,8,10),check_mass_out(para, var,4, 4,1,7,8,10)); //medium
-      //fprintf(file4,"%f\t%f\n",check_mass_in(para, var,4, 4,1,5,6,6),check_mass_out(para, var,4, 4,1,5,6,6)); //coarse
 	  
       
     //U_mean=para->prob->resu;
@@ -129,7 +123,7 @@ void FFD_solver(PARA_DATA *para, REAL **var,int **BINDEX)
    cfl(para, var);
   //write_plume_mass(para, var, BINDEX);
   write_unsteady(para, var, "unsteady");
-  write_data(para, var, "result",BINDEX);
+  write_Tecplot(para, var, "result",BINDEX);
   write_temperature(para, var,BINDEX);
   // write_time( tsize, T_mon,U_mon,P_mon);
    
@@ -137,8 +131,8 @@ void FFD_solver(PARA_DATA *para, REAL **var,int **BINDEX)
     fclose(file2);
     fclose(file3);
     fclose(file4);
- free(T_mon);
- free(U_mon);
+  free(T_mon);
+  free(U_mon);
 
   para->prob->output = 1;
 } // End of FFD_solver( ) 
@@ -235,7 +229,6 @@ void vel_step(PARA_DATA *para, REAL **var,int **BINDEX)
   set_bnd(para, var, VX, u, BINDEX);
   set_bnd(para, var, VY, v, BINDEX);
   set_bnd(para, var, VZ, w, BINDEX);
-
 
 
   advection(para, var, VX, flagu, u0, u, BINDEX);

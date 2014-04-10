@@ -1,3 +1,24 @@
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   data_structure.h
+///
+/// \brief  Defining the the data structure and macro used in FFD
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2013
+///
+/// This file provides data structues used for storing problem properties, fluid
+/// properties, simulation properties.
+///
+///////////////////////////////////////////////////////////////////////////////
+
+
 #include <time.h>
 
 #define IX(i,j,k) ((i)+(IMAX)*(j)+(IJMAX)*(k))+(IJK)
@@ -110,12 +131,12 @@ typedef enum{DEMO, DEBUG} VERSION;
 
 typedef struct 
 {
-  REAL  Lx;       /* domain size in x-direction                             */
-  REAL  Ly;       /* domain size in y-direction                             */
-  REAL  Lz;       /* domain size in z-direction                             */
-  int   imax;     /* number of interior cells in x-direction                */
-  int   jmax;     /* number of interior cells in y-direction                */
-  int   kmax;     /* number of interior cells in z-direction                */
+  REAL  Lx;       ///< domain size in x-direction                             
+  REAL  Ly;       ///< domain size in y-direction                            
+  REAL  Lz;       ///< domain size in z-direction                             
+  int   imax;     ///< number of interior cells in x-direction               
+  int   jmax;     ///< number of interior cells in y-direction               
+  int   kmax;     ///< number of interior cells in z-direction               
   int   index[10];
   int   findex;
   int   zone_num;
@@ -151,19 +172,19 @@ typedef struct{
 } OUTP_DATA;
 
 typedef struct{
-  REAL  RE;       /* Reynolds number Re                                     */
-  REAL  mu;       /* physical viscosity                                     */
-  REAL  nu;       /* kinematic viscosity                                    */
-  REAL  rho;      /* density                                                */
-  REAL  diff;     /* diffusivity for particle density                       */
-  REAL  alpha;    /* thermal diffusity                                      */
-  REAL  alpha_co; /* proption coefficient of thermal diffusity at the wall  */
+  REAL  RE;       ///< Reynolds number Re                                     
+  REAL  mu;       ///< physical viscosity                                     
+  REAL  nu;       ///<  kinematic viscosity                                    
+  REAL  rho;      ///<  density                                                
+  REAL  diff;     ///<  diffusivity for particle density                       
+  REAL  alpha;    ///<  thermal diffusity                                      
+  REAL  alpha_co; ///<  proption coefficient of thermal diffusity at the wall  
   REAL  coeff_h;
-  REAL  k;        /* thermal conductivity                                   */
+  REAL  k;        ///<  thermal conductivity                                   
   REAL  gravx;
   REAL  gravy;
-  REAL  gravz;        /* gravity                                                */
-  REAL  beta;     /* coefficient of thermal expansion                       */
+  REAL  gravz;       ///<  gravity                                                
+  REAL  beta;     ///<  coefficient of thermal expansion                       
   REAL  cond;
   REAL  trefmax;
   REAL  spec;

@@ -14,7 +14,7 @@ void set_vel_bnd(PARA_DATA *para, REAL **var,int **BINDEX) {
   set_bnd_vel(para, var, VX, u, BINDEX);
   set_bnd_vel(para, var, VY, v, BINDEX);
   set_bnd_vel(para, var, VZ, w, BINDEX); 
-} // set_bnd() 
+}//End of set_vel_bnd() 
 
 
 /******************************************************************************

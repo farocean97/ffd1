@@ -20,7 +20,7 @@ FILE *file1;
 /******************************************************************************
 | Write the data to a file for Tecplot 
 ******************************************************************************/
-int write_data(PARA_DATA *para, REAL **var, char *name,int **BINDEX)
+int write_Tecplot(PARA_DATA *para, REAL **var, char *name,int **BINDEX)
 {
   int i, j, k;
   int iter;
@@ -853,8 +853,8 @@ void write_plume_mass(PARA_DATA *para, REAL **var, int **BINDEX) {
         fprintf(file1,"%f\t",Dx*Dy*w[FIX(i,j,k)]);
         fprintf(file1,"%f\t",Dx*Dz*v[FIX(i,j-1,k)]);
         fprintf(file1,"%f\t",Dx*Dz*v[FIX(i,j,k)]);
-         fprintf(file1,"\n");
-         fprintf(file1,"\n");
+        fprintf(file1,"\n");
+        fprintf(file1,"\n");
     }
 
    }

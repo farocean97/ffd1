@@ -283,7 +283,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   zone_num += NW;
   para->geom->zone_wall=zone_num;
 
-   /**********************************      Source     ************************************************/
+   /**********************************      Source     *********************************************/
 
   fgets(string, 400, file_params);
   sscanf(string,"%d",&NBUS); 

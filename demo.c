@@ -248,9 +248,16 @@ int allocate_data ( void ){
 } /** allocate_data() **/
 
 
-/******************************************************************************
-   main --- main routine
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///Main program
+///
+/// Initialize the simualtion and read input data from SCI,run the simulations, 
+/// and write the results
+///
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
+
 int main() { 
   para.geom = &geom;
   para.outp = &outp1;
@@ -259,11 +266,8 @@ int main() {
   para.bc     = &bc;
   para.solv   = &solv;
 
-  printf("hello");
   initial(&para);
 
-  printf("hello");
-  
   if(!read_max(&para, var)) {
     printf("no file"); exit(1);
   }

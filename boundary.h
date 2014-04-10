@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// \file   advection.h
+/// \file   bounary.h
 ///
-/// \brief  Solver for advection step
+/// \brief  Subroutines for setting boundary conditions
 ///
 /// \author Mingang Jin, Qingyan Chen
 ///         Purdue University
@@ -11,17 +11,14 @@
 ///         University of Miami
 ///         W.Zuo@miami.edu
 ///
-/// \date   8/3/2013
+/// \date   04/02/2013
 ///
 /// This file provides functions that used for the setting boundary for FFD.
-/// The advection starts with \c advect(). Then different subroutines are 
-/// called according to the properties of the variables that are sorted by
-/// the location of variables assigned in the control volume. 
-/// Velocities at X, Y and Z directions are locatted
-/// on the surface of the control volume. They are computed using 
-/// subroutines: \c traceback_uvw
-/// Scalar variables are in the center of control volume and they are computed
-/// using \c trace_scalar().
+/// FFD will set up bounary conditons for velocity \c set_vel_bnd(), pressure
+/// \c set_bnd_pressure(),temperature \c set_bnd_temp() and species 
+/// concentration \c set_bnd_density(). In addition, this fine contains 
+/// functions for enforcing mass conservation at the outflow bounary and 
+/// special treatment for plume cells.
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
