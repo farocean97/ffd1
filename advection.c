@@ -164,7 +164,6 @@ void traceback(PARA_DATA *para, REAL **var, int **BINDEX){
   int IMAX = imax+2, IJMAX = (imax+2)*(jmax+2);
   REAL *fx=var[FX],*fy=var[FY],*fz=var[FZ];
   REAL dt = para->mytime->dt; 
-  REAL dx,dy,dz;
   REAL u0, v0, w0;
   REAL *x = var[X],  *y = var[Y],  *z = var[Z]; 
   REAL *gx = var[GX],  *gy = var[GY],  *gz = var[GZ]; 
@@ -259,7 +258,6 @@ void traceback_UVW(PARA_DATA *para, REAL **var, int var_type, REAL *flag, int **
   int IMAX = imax+2, IJMAX = (imax+2)*(jmax+2);
   REAL *fx=var[FX],*fy=var[FY],*fz=var[FZ];
   REAL dt = para->mytime->dt; 
-  REAL dx,dy,dz;
   REAL u0, v0, w0;
   REAL *x = var[X],  *y = var[Y],  *z = var[Z]; 
   REAL *gx = var[GX],  *gy = var[GY],  *gz = var[GZ]; 
@@ -440,10 +438,11 @@ void traceback_UVW(PARA_DATA *para, REAL **var, int var_type, REAL *flag, int **
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Find the location and coordinates of departure points at x direction
+/// \brief Find the location and coordinates of departure points at x direction
 ///
 /// Conducting backward tracing for the particle's X-location and 
-/// corresponding coordinates at the previous time step.
+/// corresponding coordinates at the previous time step.The initial point of
+/// traceback starts from the center of the cell.
 ///
 ///\param para Pointer to FFD parameters
 ///\param var Pointer to FFD simulation variables
@@ -511,8 +510,16 @@ void XLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *x, REAL u0,
 
   //if the U<0, then search to the right direction.
   else {
+    //if the cell index smaller than imax, keep searching.
     if(OC[X]<=imax) OC[X] +=1;
+    //if the cell coordinate is larger than departure coordinate, stop searching.
     if(OL[X] <=x[FIX(OC[X],OC[Y],OC[Z])]) COOD[X]=0;
+
+    //if the cell flag shows the cell is solid(flag>0) or pass 
+    //through wall partiions(flagu==4), stop searching in x direciton
+    //set COOD=0,and assign LOC=0 
+    //reset the cell index to the one next to the bounary cell so that trace
+    //back in other directions can still continue.
     if(flag[FIX(OC[X],OC[Y],OC[Z])]>0 || flagu[FIX(OC[X]-1,OC[Y],OC[Z])]==4){
       if(flagu[FIX(OC[X]-1,OC[Y],OC[Z])]==0){
         if(OL[X]>x[FIX(OC[X],OC[Y],OC[Z])]) OL[X]=x[FIX(OC[X],OC[Y],OC[Z])];
@@ -525,9 +532,31 @@ void XLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *x, REAL u0,
       OC[X] -=1;
     }
   }         
-} 
+} // End of XLOCATION()
 
 
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Find the location and coordinates of departure points at y direction
+///
+/// Conducting backward tracing for the particle's Y-location and 
+/// corresponding coordinates at the previous time step.The initial point of
+/// traceback starts from the center of the cell.
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param flag Pointer to the property of the cell
+///\param x Pointer to the x coordinates of the cell
+///\param u0 X-velocity at time (t-1) in location x(t) 
+///\param i I-index for cell at time t at x(t) 
+///\param j J-index for cell at time t at x(t)
+///\param k K-index for cell at time t at x(t)
+///\param OL Pointer to the locations of particle at time (t-1)
+///\param OC Pointer to the coordinates of particle at time (t-1)
+///\param LOC Pointer to flags recording if tracing back hits the boundary
+///\param COOD Pointer to record the status of tracing back process
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////  
 
 void YLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *y, REAL v0,
                int i, int j, int k,  REAL *OL, int *OC, int *LOC , int *COOD) {
@@ -573,8 +602,31 @@ void YLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *y, REAL v0,
       OC[Y] -=1; 
     }
   }
-}
+} // End of YLOCATION()
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Find the location and coordinates of departure points at z direction
+///
+/// Conducting backward tracing for the particle's Z-location and 
+/// corresponding coordinates at the previous time step.The initial point of
+/// traceback starts from the center of the cell.
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param flag Pointer to the property of the cell
+///\param x Pointer to the x coordinates of the cell
+///\param u0 X-velocity at time (t-1) in location x(t) 
+///\param i I-index for cell at time t at x(t) 
+///\param j J-index for cell at time t at x(t)
+///\param k K-index for cell at time t at x(t)
+///\param OL Pointer to the locations of particle at time (t-1)
+///\param OC Pointer to the coordinates of particle at time (t-1)
+///\param LOC Pointer to flags recording if tracing back hits the boundary
+///\param COOD Pointer to record the status of tracing back process
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////  
 
 void ZLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *z, REAL w0,
                int i, int j, int k,  REAL *OL, int *OC, int *LOC , int *COOD){
@@ -619,9 +671,32 @@ void ZLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *z, REAL w0,
       OC[Z] -=1;
     }
   }
-}
+} // End of ZLOCATION()
 
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Find the location and coordinates of departure points at x direction
+///
+/// Conducting backward tracing for the particle's x-location and 
+/// corresponding coordinates at the previous time step.The initial point of
+/// traceback starts from the west or east surface of the mesh cell .
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param flag Pointer to the property of the cell
+///\param x Pointer to the x coordinates of the cell
+///\param u0 X-velocity at time (t-1) in location x(t) 
+///\param i I-index for cell at time t at x(t) 
+///\param j J-index for cell at time t at x(t)
+///\param k K-index for cell at time t at x(t)
+///\param OL Pointer to the locations of particle at time (t-1)
+///\param OC Pointer to the coordinates of particle at time (t-1)
+///\param LOC Pointer to flags recording if tracing back hits the boundary
+///\param COOD Pointer to record the status of tracing back process
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////  
 
 void XLOCATION_U(PARA_DATA *para, REAL **var, REAL *flag, REAL *x, REAL u0,
                int i, int j, int k,  REAL *OL, int *OC, int *LOC , int *COOD){
@@ -667,10 +742,31 @@ void XLOCATION_U(PARA_DATA *para, REAL **var, REAL *flag, REAL *x, REAL u0,
       OC[X] -=1;
     }
   }         
-}
+}// End of XLOCATION_U()
 
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Find the location and coordinates of departure points at y direction
+///
+/// Conducting backward tracing for the particle's Y-location and 
+/// corresponding coordinates at the previous time step.The initial point of
+/// traceback starts from the north or south face of the mesh cell.
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param flag Pointer to the property of the cell
+///\param x Pointer to the x coordinates of the cell
+///\param u0 X-velocity at time (t-1) in location x(t) 
+///\param i I-index for cell at time t at x(t) 
+///\param j J-index for cell at time t at x(t)
+///\param k K-index for cell at time t at x(t)
+///\param OL Pointer to the locations of particle at time (t-1)
+///\param OC Pointer to the coordinates of particle at time (t-1)
+///\param LOC Pointer to flags recording if tracing back hits the boundary
+///\param COOD Pointer to record the status of tracing back process
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////  
 void YLOCATION_V(PARA_DATA *para, REAL **var, REAL *flag, REAL *y, REAL v0,
                int i, int j, int k,  REAL *OL, int *OC, int *LOC , int *COOD) {
   int imax = para->geom->imax, jmax = para->geom->jmax;
@@ -714,8 +810,31 @@ void YLOCATION_V(PARA_DATA *para, REAL **var, REAL *flag, REAL *y, REAL v0,
       OC[Y] -=1; 
     }
   }
-}
+} // End of YLOCATION_V()
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Find the location and coordinates of departure points at z direction
+///
+/// Conducting backward tracing for the particle's z-location and 
+/// corresponding coordinates at the previous time step.The initial point of
+/// traceback starts from the front or back face of the mesh cell
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param flag Pointer to the property of the cell
+///\param x Pointer to the x coordinates of the cell
+///\param u0 X-velocity at time (t-1) in location x(t) 
+///\param i I-index for cell at time t at x(t) 
+///\param j J-index for cell at time t at x(t)
+///\param k K-index for cell at time t at x(t)
+///\param OL Pointer to the locations of particle at time (t-1)
+///\param OC Pointer to the coordinates of particle at time (t-1)
+///\param LOC Pointer to flags recording if tracing back hits the boundary
+///\param COOD Pointer to record the status of tracing back process
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////  
 
 void ZLOCATION_W(PARA_DATA *para, REAL **var, REAL *flag, REAL *z, REAL w0,
                int i, int j, int k,  REAL *OL, int *OC, int *LOC , int *COOD){

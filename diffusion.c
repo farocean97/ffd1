@@ -13,8 +13,6 @@
 ******************************************************************************/
 void diffusion(PARA_DATA *para, REAL **var, int var_type, 
                REAL *psi, REAL *psi0, int **BINDEX) {
-  REAL residual = 1.0;
-  int iter = 0;
 
   // Define the coefcients for euqations
   coef_diff(para, var, psi, psi0, var_type, BINDEX);
@@ -139,8 +137,12 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         }
         
         ap0[FIX(i,j,k)]= Dx*Dy*Dz/dt;
-        b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)]-beta*gravx
-                         *(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i+1,j,k)])-Temp_opt)*Dx*Dy*Dz;
+        b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)];
+        if(para->prob->gravdir==GRAVX || para->prob->gravdir==GRAVXN ) {
+          b[FIX(i,j,k)] -= beta*gravx *(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i+1,j,k)])-Temp_opt)*Dx*Dy*Dz;
+          b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model  
+        }
+
         ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
                         + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
       END_FOR
@@ -188,18 +190,22 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 
         ap0[FIX(i,j,k)]= Dx*Dy*Dz/dt;
         b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)];
-        b[FIX(i,j,k)] -= beta*gravy*(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i,j+1,k)])-Temp_opt)*Dx*Dy*Dz;
-        b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;
+
+        if(para->prob->gravdir==GRAVY || para->prob->gravdir==GRAVYN ) {
+
+          b[FIX(i,j,k)] -= beta*gravy*(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i,j+1,k)])-Temp_opt)*Dx*Dy*Dz;
+          b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model 
+        }
         ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
                         + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
       END_FOR
 
-      //set_bnd(para, var, var_type, psi,BINDEX);
+      set_bnd(para, var, var_type, psi, BINDEX);
+
     break;
 
     case VZ: 
       kapa = para->prob->nu; 
-
 
       FOR_W_CELL
         if(flagw[FIX(i,j,k)]>=0) continue;
@@ -235,8 +241,12 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         }
         
         ap0[FIX(i,j,k)]= Dx*Dy*Dz/dt;
-        b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)]-beta*gravz
-                      *(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i,j,k+1)])-Temp_opt)*Dx*Dy*Dz;
+        b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)];
+        
+        if(para->prob->gravdir==GRAVZ || para->prob->gravdir==GRAVZN ) {
+          b[FIX(i,j,k)] -= beta*gravz*(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i,j,k+1)])-Temp_opt)*Dx*Dy*Dz;
+          b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model 
+        }
         ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
                         + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
       END_FOR
@@ -294,7 +304,6 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 
       set_bnd(para, var, var_type, psi,BINDEX);
 
-
       FOR_EACH_CELL
         ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
                   + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
@@ -302,8 +311,7 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         
       break;
     case DEN:  
-      kapa = 0.0000156f;// 0.00028f;
-      
+      kapa = para->prob->nu;
       FOR_EACH_CELL
         dxe=x[FIX(i+1,j,k)]-x[FIX(i,j,k)];
         dxw=x[FIX(i,j,k)]-x[FIX(i-1,j,k)];
@@ -339,33 +347,3 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 }// End of coef_diff( )
 
 
-/******************************************************************************
-| Source Term for Diffusion 
-******************************************************************************/
-void source_diff(PARA_DATA *para, REAL **var, int var_type) {
-  int i, j, k;  
-  int imax = para->geom->imax, jmax = para->geom->jmax; 
-  int kmax = para->geom->kmax;
-  int IMAX = imax+2, IJMAX = (imax+2)*(jmax+2);
-  REAL *b = var[B];
-  REAL *x = var[X], *y = var[Y], *z = var[Z];
-  REAL *gx = var[GX], *gy = var[GY], *gz = var[GZ];
-  REAL dt = para->mytime->dt; 
- 
-  FOR_EACH_CELL
-    switch(var_type) {
-      case VX:
-        b[FIX(i,j,k)] += 0;   break;
-      case VY: 
-        b[FIX(i,j,k)] += 0;   break;
-      case VZ: 
-        b[FIX(i,j,k)] += 0;   break;
-      case TEMP: 
-        b[FIX(i,j,k)] +=  0;  break;
-      case DEN:  
-        b[FIX(17,14,8)] += 0.000001f;  
-        b[FIX(10,6,8)]  += 0.000001f; 
-        break;
-    }
-  END_FOR
-} // End of source_diff()

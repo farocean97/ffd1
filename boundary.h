@@ -22,7 +22,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
-void set_vel_bnd(PARA_DATA *para, REAL **var,int **BINDEX);
+//void set_vel_bnd(PARA_DATA *para, REAL **var,int **BINDEX);
 
 void set_bnd(PARA_DATA *str_geom, REAL **var, int var_type, REAL *x, int **BINDEX);
 

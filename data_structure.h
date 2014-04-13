@@ -129,6 +129,8 @@ typedef enum{BILINEAR,HYBRID, FSJ} INTERPOLATION;
 
 typedef enum{DEMO, DEBUG} VERSION;
 
+typedef enum{GRAVX,GRAVXN,GRAVY,GRAVYN,GRAVZ,GRAVZN} GRAVDIR;
+
 typedef struct 
 {
   REAL  Lx;       ///< domain size in x-direction                             
@@ -183,7 +185,8 @@ typedef struct{
   REAL  k;        ///<  thermal conductivity                                   
   REAL  gravx;
   REAL  gravy;
-  REAL  gravz;       ///<  gravity                                                
+  REAL  gravz;       ///<  gravity      
+  GRAVDIR gravdir;
   REAL  beta;     ///<  coefficient of thermal expansion                       
   REAL  cond;
   REAL  trefmax;

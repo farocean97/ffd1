@@ -280,44 +280,29 @@ void vel_step(PARA_DATA *para, REAL **var,int **BINDEX)
 /******************************************************************************
 | Solver of equations
 ******************************************************************************/ 
-void equ_solver(PARA_DATA *para, REAL **var, int var_type, REAL *psi)
-{
-   REAL *flagp = var[FLAGP],*flagu = var[FLAGU],*flagv = var[FLAGV],*flagw = var[FLAGW];
+void equ_solver(PARA_DATA *para, REAL **var, int var_type, REAL *psi) {
+  REAL *flagp = var[FLAGP],*flagu = var[FLAGU],*flagv = var[FLAGV],*flagw = var[FLAGW];
   REAL res;
 
- 
-    switch (var_type)
-  {
+  switch (var_type) {
     case VX:
       Gauss_Seidel(para, var, flagu, psi);
-      // Gauss_Seidel_simple(para,var,flagu,psi);
-    res= check_residual(para,var,flagu,psi);
-     //  para->prob->resu=res;
-    //  printf ("residual=%.3g\n",res);
+      //res= check_residual(para,var,flagu,psi);
     break;
     case VY:
       Gauss_Seidel(para, var, flagv, psi);
-      //   Gauss_Seidel_simple(para,var,flagv,psi);
-     res= check_residual(para,var,flagv,psi );
-      para->prob->resv= res;
-   //  printf ("residual=%.3g\n",res);
+      //res= check_residual(para,var,flagv,psi );
     break;
     case VZ:
-     Gauss_Seidel(para, var, flagw, psi);
-      //   Gauss_Seidel_simple(para,var,flagw,psi);
-    // res= check_residual(para,var,flagw,psi );
-    // para->prob->resw= res;
-    //  printf ("residual=%.3g\n",res);
+      Gauss_Seidel(para, var, flagw, psi);
+      // res= check_residual(para,var,flagw,psi );
     break;
     case TEMP:
     case IP:
     case DEN:
-        //Gauss_Seidel(para, var, flagp, psi);
-        GS_P(para, var, TEMP, psi);
-       //  Gauss_Seidel_simple(para,var,flagp,psi);
-       res= check_residual(para,var,flagp,psi );
-         para->prob->resu= res;
-       break;
+      GS_P(para, var, TEMP, psi);
+      //res= check_residual(para,var,flagp,psi );
+    break;
   }
      
 

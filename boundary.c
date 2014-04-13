@@ -1,3 +1,28 @@
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   bounary.c
+///
+/// \brief  Subroutines for setting boundary conditions
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2013
+///
+/// This file provides functions that used for the setting boundary for FFD.
+/// FFD will set up bounary conditons for velocity \c set_vel_bnd(), pressure
+/// \c set_bnd_pressure(),temperature \c set_bnd_temp() and species 
+/// concentration \c set_bnd_density(). In addition, this fine contains 
+/// functions for enforcing mass conservation at the outflow bounary and 
+/// special treatment for plume cells.
+///
+///////////////////////////////////////////////////////////////////////////////
+
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,18 +33,21 @@
 
 
 
-void set_vel_bnd(PARA_DATA *para, REAL **var,int **BINDEX) {
-  REAL *u = var[VX], *v = var[VY], *w = var[VZ];
 
-  set_bnd_vel(para, var, VX, u, BINDEX);
-  set_bnd_vel(para, var, VY, v, BINDEX);
-  set_bnd_vel(para, var, VZ, w, BINDEX); 
-}//End of set_vel_bnd() 
-
-
-/******************************************************************************
-|  Set the boundary conditions
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Entrance of setting boundary conditions
+///
+/// Specific boundary conditions will be selected according to the variable 
+/// type.
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param var_type The type of variable
+///\param psi Pointer to the variable needing the boundary conditions
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void set_bnd(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BINDEX){
   switch(var_type){
     case VX:
@@ -36,9 +64,17 @@ void set_bnd(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BINDEX)
 } // set_bnd() 
 
 
-/**************************************************************************************************************
-|  Set the boundary conditions for velocity
-*******************************************************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Set boundary conditions for velocity
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param var_type The type of variable
+///\param psi Pointer to the variable needing the boundary conditions
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BINDEX){
   int i, j, k;
   int it;
@@ -60,29 +96,41 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
   pindexmax_z=para->geom->index[5];
   
   switch(var_type){
+    //Assigning bounary condition for velocity at X direction.
     case VX:
       for(it=1;it<=indexmax;it++){
         i=BINDEX[0][it];
         j=BINDEX[1][it];
         k=BINDEX[2][it]; 
+        // flagp=0 is heat source cell, then skip assigning boundary condition
+        // first asssigning bounary condtion at East face of a boundary cell.
         if(flagp[FIX(i,j,k)]==0) continue;
+        //flagu=0 is inlet boundary
         if(flagu[FIX(i,j,k)]==0){
           psi[FIX(i,j,k)]= para->bc->u_bc[BINDEX[13][FIX(i,j,k)]]; 
-          b[FIX(i+1,j,k)] += para->bc->um_bc[BINDEX[13][FIX(i,j,k)]]*
+          if(fabs(psi[FIX(i,j,k)]>0.000001)) {
+            b[FIX(i+1,j,k)] += para->bc->um_bc[BINDEX[13][FIX(i,j,k)]]*
                   (gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
+          }
         }
+        //flagu>1 velocity boudnary for solid wall 
         if(flagu[FIX(i,j,k)]>1) psi[FIX(i,j,k)]= 0;
+
+        //flag
         if(flagu[FIX(i,j,k)]==1 && i<=imax) {
           psi[FIX(i,j,k)]= psi[FIX(i+1,j,k)]; 
           ap[FIX(i+1,j,k)] -= aw[FIX(i+1,j,k)];
           aw[FIX(i+1,j,k)]=0; 
         }
-
+        
+        // Then assigning boundary condition at West face of a boundary cell
         ii=max(i-1,0);
         if(flagu[FIX(ii,j,k)]==0){
           psi[FIX(ii,j,k)]= para->bc->u_bc[BINDEX[13][FIX(ii,j,k)]]; 
-          b[FIX(ii-1,j,k)] += para->bc->um_bc[BINDEX[13][FIX(ii,j,k)]]*
+          if(fabs(psi[FIX(ii,j,k)]>0.000001)) {
+            b[FIX(ii-1,j,k)] += para->bc->um_bc[BINDEX[13][FIX(ii,j,k)]]*
                   (gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
+          }
         }
         if(flagu[FIX(ii,j,k)]>1 ) psi[FIX(ii,j,k)]= 0;
         if(flagu[FIX(ii,j,k)]==1 && ii>0){
@@ -92,12 +140,16 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         }
       }
 
+      //Searching the boundary types of partition walls
+      //Set velocity to zero if the normal direction of the wall is at X direction
       for(it=1;it<=pindexmax_x;it++){
         i=BINDEX[17][it];
         j=BINDEX[18][it];
         k=BINDEX[19][it];
         psi[FIX(i,j,k)]=0;
       }
+      // if the normal direction of the wall is at Y or Z direction
+      // set corresponding coefficient to zero
       for(it=pindexmax_x+1;it<=pindexmax_y;it++) {
         i=BINDEX[17][it];
         j=BINDEX[18][it];
@@ -117,14 +169,20 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         ab[FIX(i-1,j,k+1)]=0;
       }
       break;
-
+    //Assigning bounary condition for velocity at Y direction.   
     case VY:
       for(it=1;it<=indexmax;it++) {
         i=BINDEX[0][it];
         j=BINDEX[1][it];
         k=BINDEX[2][it];
         if(flagp[FIX(i,j,k)]==0) continue; //heat source cell 
-        if(flagv[FIX(i,j,k)]==0) psi[FIX(i,j,k)]= para->bc->v_bc[BINDEX[14][FIX(i,j,k)]]; 
+        if(flagv[FIX(i,j,k)]==0) {
+          psi[FIX(i,j,k)]= para->bc->v_bc[BINDEX[14][FIX(i,j,k)]]; 
+          if(fabs(psi[FIX(i,j,k)]>0.000001)) {
+            b[FIX(i,j+1,k)] += para->bc->um_bc[BINDEX[14][FIX(i,j,k)]]*
+                  (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
+          }
+        }
         if(flagv[FIX(i,j,k)]> 1) psi[FIX(i,j,k)]= 0;
         if(flagv[FIX(i,j,k)]==1 && j<=jmax) {
           psi[FIX(i,j,k)]= psi[FIX(i,j+1,k)]; 
@@ -133,7 +191,13 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         }
 
         jj=max(j-1,0);
-        if(flagv[FIX(i,jj,k)]==0) psi[FIX(i,jj,k)]= para->bc->v_bc[BINDEX[14][FIX(i,jj,k)]];
+        if(flagv[FIX(i,jj,k)]==0) {
+          psi[FIX(i,jj,k)]= para->bc->v_bc[BINDEX[14][FIX(i,jj,k)]];
+          if(fabs(psi[FIX(i,jj,k)]>0.000001)) {
+            b[FIX(i,jj-1,k)] += para->bc->um_bc[BINDEX[14][FIX(i,jj,k)]]*
+                  (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
+          }
+        }
         if(flagv[FIX(i,jj,k)]>1) psi[FIX(i,jj,k)]= 0;
         if(flagv[FIX(i,jj,k)]==1 && jj>0){
           psi[FIX(i,jj,k)]= psi[FIX(i,jj-1,k)];
@@ -167,14 +231,21 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
       }
 
       break;
-        
+
+    //Assigning bounary condition for velocity at X direction.        
     case VZ:
       for(it=1;it<=indexmax;it++){
         i=BINDEX[0][it];
         j=BINDEX[1][it];
         k=BINDEX[2][it];
         if(flagp[FIX(i,j,k)]==0) continue;
-        if(flagw[FIX(i,j,k)]==0) psi[FIX(i,j,k)]= para->bc->w_bc[BINDEX[15][FIX(i,j,k)]]; 
+        if(flagw[FIX(i,j,k)]==0) {
+          psi[FIX(i,j,k)]= para->bc->w_bc[BINDEX[15][FIX(i,j,k)]]; 
+          if(fabs(psi[FIX(i,j,k)]>0.000001)) {
+            b[FIX(i,j,k+1)] += para->bc->um_bc[BINDEX[15][FIX(i,j,k)]]*
+                  (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
+          }
+        }
         if(flagw[FIX(i,j,k)]>1) psi[FIX(i,j,k)]= 0; 
         if(flagw[FIX(i,j,k)]==1 && k<=kmax){
           psi[FIX(i,j,k)]= psi[FIX(i,j,k+1)];
@@ -183,7 +254,13 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         }
 
         kk=max(k-1,0);
-        if(flagw[FIX(i,j,kk)]==0) psi[FIX(i,j,kk)]= para->bc->w_bc[BINDEX[15][FIX(i,j,kk)]]; 
+        if(flagw[FIX(i,j,kk)]==0) {
+          psi[FIX(i,j,kk)]= para->bc->w_bc[BINDEX[15][FIX(i,j,kk)]]; 
+          if(fabs(psi[FIX(i,j,kk)]>0.000001)) {
+            b[FIX(i,j,kk-1)] += para->bc->um_bc[BINDEX[15][FIX(i,j,kk)]]*
+                  (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
+          }
+        }
         if(flagw[FIX(i,j,kk)]>1) psi[FIX(i,j,kk)]= 0; 
         if(flagw[FIX(i,j,kk)]==1 && kk>0){
           psi[FIX(i,j,kk)]= psi[FIX(i,j,kk-1)]; 
@@ -221,6 +298,19 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
 
 
 
+
+///////////////////////////////////////////////////////////////////////////////
+///\brief Set boundary conditions for temperature
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param var_type The type of variable
+///\param psi Pointer to the variable needing the boundary conditions
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
+
 void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BINDEX){
   int i, j, k;
   int it,zone_num;
@@ -239,7 +329,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
   REAL T_amb=292.5f;
   REAL qflux;
   REAL qflow_a=para->bc->qflow_a;
-  int priority=0;
+  int priority=0;//the priority of storing temperature value at the cell.
   REAL *flagp = var[FLAGP],*flagu = var[FLAGU];
   REAL *flagv = var[FLAGV],*flagw = var[FLAGW];
 
@@ -255,7 +345,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
     j=BINDEX[1][it];
     k=BINDEX[2][it];
     
-    /*******X direction EAST FACE********/
+    //X direction EAST FACE
     if(i<imax && (flagp[FIX(i+1,j,k)]<=0)) {
       switch((int)flagu[FIX(i,j,k)]){
         case 0: //inlet_surface
@@ -315,7 +405,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
       }
     }
     
-    /*******X direction WEST FACE********/
+    //X direction WEST FACE
     if(i>0 && (flagp[FIX(i-1,j,k)]<=0)) {
       switch((int)flagu[FIX(i-1,j,k)]){
         case 0:
@@ -375,7 +465,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
       }
     }
     
-    /*******Y direction NORTH FACE********/
+    //Y direction NORTH FACE
     if(j<jmax && (flagp[FIX(i,j+1,k)]<=0)) {
       switch( (int)flagv[FIX(i,j,k)]){
         case 0:
@@ -436,7 +526,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
     }
     
     
-    /*******Y direction SOUTH FACE********/
+    //Y direction SOUTH FACE
     if(j>0 && (flagp[FIX(i,j-1,k)]<=0)){
       switch( (int)flagv[FIX(i,j-1,k)]){
         case 0:
@@ -497,7 +587,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
     }
 
 
-    /*******Z direction FRONT FACE********/
+    //Z direction FRONT FACE
     if(k<kmax && (flagp[FIX(i,j,k+1)]<=0)){
       switch( (int)flagw[FIX(i,j,k)]){
         case 0:
@@ -558,7 +648,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
     }
     
     
-    /*******Z direction BACK FACE********/
+    //Z direction BACK FACE
     if(k>0 && (flagp[FIX(i,j,k-1)]<=0)){
       switch( (int)flagw[FIX(i,j,k-1)]){
         case 0:
@@ -617,10 +707,11 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
           break;
       }
     }
-  }//end_for
+  }
   
   
-  /**********************************Partitions****************************************************/
+  //Assigning temperature boundary conditions for partition wall
+  //Assumption: these walls are adiabatic
   for(it=1;it<=pindexmax_x;it++) {
     i=BINDEX[17][it];
     j=BINDEX[18][it];
@@ -643,42 +734,31 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
     ab[FIX(i,j,k+1)]=0;
   }
   
-  /**********************************Heat sources****************************************************/
+  //Assigning boundary condtions for heat source cell
   for(it=indexmax+1;it<=indexmax_us;it++) {
     i=BINDEX[0][it];
     j=BINDEX[1][it];
     k=BINDEX[2][it];
-    zone_num=BINDEX[16][FIX(i,j,k)]; 
-    if(para->prob->plume_mod==0) {
-      b[FIX(i,j,k)] += para->bc->t_bc[zone_num]/(rho*cp);
-    }
-    else {
-      b[FIX(i,j,k)] += para->bc->t_bc[zone_num]/(rho*cp);
+    zone_num=BINDEX[16][FIX(i,j,k)];
 
-      //qflux= para->bc->qdiff;
-      //af[FIX(i,j,k-1)]=0;
-      //b[FIX(i,j,k-1)] += 1/(rho*cp)*qflux*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])
-      //                                   *(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)]);
-      //ab[FIX(i,j,k+1)]=0;
-      //b[FIX(i,j,k+1)] += 1/(rho*cp)*qflux*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])
-      //                                   *(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)]);
-      //aw[FIX(i+1,j,k)]=0;
-      //b[FIX(i+1,j,k)] += 1/(rho*cp)*qflux*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])
-      //                                   *(gz[FIX(i,j,k+1)]-gz[FIX(i,j,k)]);
-      //ae[FIX(i-1,j,k)]=0;
-      //b[FIX(i-1,j,k)] += 1/(rho*cp)*qflux*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])
-      //                                   *(gz[FIX(i,j,k+1)]-gz[FIX(i,j,k)]);
-      //as[FIX(i,j+1,k)]=0;
-      //b[FIX(i,j+1,k)] += 1/(rho*cp)*qflow_a;
-  
-    }
+    b[FIX(i,j,k)] += para->bc->t_bc[zone_num]/(rho*cp);
+
   }
-  
-
-}
-
+ 
+} //End of set_bnd_temp()
 
 
+///////////////////////////////////////////////////////////////////////////////
+///\brief Set boundary conditions for species
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param var_type The type of variable
+///\param p Pointer to the variable needing the boundary conditions
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void set_bnd_density(PARA_DATA *para, REAL **var, int var_type, REAL *p,int **BINDEX) {
   int i, j, k;
   int imax = para->geom->imax, jmax = para->geom->jmax;
@@ -725,9 +805,16 @@ void set_bnd_density(PARA_DATA *para, REAL **var, int var_type, REAL *p,int **BI
 } // End of set_bnd_pressure( )
 
 
-/******************************************************************************
-|  Set the boundary conditions for pressure
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Set boundary conditions for pressure equation
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param p Pointer to the variable needing the boundary conditions
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void set_bnd_pressure(PARA_DATA *para, REAL **var, REAL *p, int **BINDEX){
   int i, j, k,it;
   int imax = para->geom->imax, jmax = para->geom->jmax;
@@ -741,7 +828,7 @@ void set_bnd_pressure(PARA_DATA *para, REAL **var, REAL *p, int **BINDEX){
   pindexmax_x=para->geom->index[3];
   pindexmax_y=para->geom->index[4];
   pindexmax_z=para->geom->index[5];
-  
+
   FOR_EACH_CELL
     if(flagp[FIX(i,j,k)]==1) continue;
     if(flagp[FIX(i-1,j,k)]==1)  {
@@ -770,7 +857,7 @@ void set_bnd_pressure(PARA_DATA *para, REAL **var, REAL *p, int **BINDEX){
     }
   END_FOR
     
-    
+  //Set the boundary condtions for partition walls  
   for(it=1;it<=pindexmax_x;it++) {
     i=BINDEX[17][it];
     j=BINDEX[18][it];
@@ -799,9 +886,20 @@ void set_bnd_pressure(PARA_DATA *para, REAL **var, REAL *p, int **BINDEX){
 
 
 
-/******************************************************************************
-| Check the mass conservation of the domain
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief correct the velocity at the outflow boundary
+///
+/// The exterpolation is applied to calcuate the velocity value at the outflow 
+/// bounary ,but it can not enforce the mass conservation.
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param var_type The type of variable
+///\param psi Pointer to the variable needing the boundary conditions
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void mass_conservation(PARA_DATA *para, REAL **var,int **BINDEX) {
   int i, j, k;
   int SI,EI,SJ,EJ,SK,EK;
@@ -815,15 +913,12 @@ void mass_conservation(PARA_DATA *para, REAL **var,int **BINDEX) {
   REAL *flagp = var[FLAGP];
   int zone_num,zone_inlet,zone_outlet;
 
-  /*---------------------------------------------------------------------------
-  | Compute the total inflow
-  ---------------------------------------------------------------------------*/
 
   zone_inlet=para->geom->zone_inlet;
   zone_outlet=para->geom->zone_outlet;
   
   
-  /***************inlet***************************************/
+  // compute the total inflow rate
   
   for(zone_num=1;zone_num<=zone_inlet;zone_num++) {
     SI=BINDEX[7][zone_num];
@@ -859,7 +954,7 @@ void mass_conservation(PARA_DATA *para, REAL **var,int **BINDEX) {
   
   
   
-  /***************outlet***************************************/
+  //compute the total outflow rate
   
   for(zone_num=zone_inlet+1;zone_num<=zone_outlet;zone_num++) {
     SI=BINDEX[7][zone_num];
@@ -898,10 +993,9 @@ void mass_conservation(PARA_DATA *para, REAL **var,int **BINDEX) {
     }
   }
   
-  //printf("mass_in = %f, mass_out = %f, mass_in/mass_out=%f\n", mass_in, mass_out,mass_in/mass_out); 
-  
-  /***************mass correction***************************************/
 
+  
+  // correct the velocity at the outlet
   for(zone_num=zone_inlet+1;zone_num<=zone_outlet;zone_num++) {
     SI=BINDEX[7][zone_num];
     EI=BINDEX[8][zone_num];
@@ -914,7 +1008,8 @@ void mass_conservation(PARA_DATA *para, REAL **var,int **BINDEX) {
     if(SI==EI) {
       for(j=SJ ;j<EJ ;j++)
         for(k=SK ;k<EK ;k++)  {
-          u[FIX(SI,j+1,k+1)] -= flagp[FIX(SI,j+1,k+1)]*(mass_in+mass_out)/area_out; 
+          //u[FIX(SI,j+1,k+1)] -= flagp[FIX(SI,j+1,k+1)]*(mass_in+mass_out)/area_out; 
+          u[FIX(SI,j+1,k+1)]=-flagp[FIX(SI,j+1,k+1)]*mass_in/area_out;
         }
     }
     
@@ -939,9 +1034,23 @@ void mass_conservation(PARA_DATA *para, REAL **var,int **BINDEX) {
 
 
 
+///////////////////////////////////////////////////////////////////////////////
+///\brief Compute the velocity using plume model
+///
+/// For the coarse-grid FFD,if the heat source cell is too large,the predicted
+/// velocity at the heat source cell might not be accurate, the plume model can
+/// be applied to predict that veolcity, and to correct the FFD prediction.
+///
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
+
 void plume(PARA_DATA *para, REAL **var, int **BINDEX){
   int i, j, k;
-  int ii,jj,kk;
   int it;
   int imax = para->geom->imax, jmax = para->geom->jmax;
   int kmax = para->geom->kmax;
@@ -958,116 +1067,97 @@ void plume(PARA_DATA *para, REAL **var, int **BINDEX){
   REAL rho=para->prob->rho;
   REAL cp=para->prob->spec;
   REAL beta=para->prob->beta;
-  REAL alpha;
-  REAL qflux_r,qflow_a;
-  REAL b,dx,dz,dist,dT,radius;
+  REAL b;
   REAL a1,Dx,Dy,Dz;
   REAL vc,v_plume;
   REAL zv=para->geom->zv;
   REAL z_s;
   REAL Kv=0.122;
-  REAL Kt=0.45; //0.4
-  REAL Qp;
+  REAL Kt=0.45; 
   REAL Kq=0.0045;
   REAL eta=0.09;
   REAL Pc;
-  REAL T_amb;
-  REAL T_s=300;
-  REAL mass=0;
-  REAL area=0;
   REAL *s_plume=var[ER];
   
   indexmax=para->geom->index[1];
   indexmax_us=para->geom->index[2];
 
 
-  /**********************************Heat sources********************************/
   for(it=indexmax+1;it<=indexmax_us;it++) {
     i=BINDEX[0][it];
     j=BINDEX[1][it];
     k=BINDEX[2][it];
     zone_num=BINDEX[16][FIX(i,j,k)]; 
+    Pc=para->bc->t_bc[zone_num];
 
     para->geom->jplume=j;
     para->geom->iplume=i;
     para->geom->kplume=k;
-    z_s=y[FIX(i,j,k)]+zv;
 
-    Pc=para->bc->t_bc[zone_num];
-    //printf("Pc=%f\n",Pc);
+    switch(para->prob->gravdir) {
+      case GRAVX:
+      case GRAVXN:
+        z_s= x[FIX(i,j,k)]+zv;
+        Dx = gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
+        Dy = gy[FIX(i,j ,k)]-gy[FIX(i,j-1,k)];
+        Dz = gz[FIX(i,j ,k)]-gz[FIX(i,j,k-1)];
+        b=6/5*eta*(gx[FIX(i,j,k)]-z_s);
+        a1=3.14f*b*b*(1-exp(-Dy*Dz/(b*b)))/(Dy*Dz);
+        vc=Kv*pow(Pc,0.33333)*pow((gx[FIX(i,j,k)]-z_s),-0.33333);
+        v_plume=a1*vc;//0.63
+        s_plume[FIX(i,j,k)]=v_plume-u[FIX(i,j,k)];
+        break;
+
+      case GRAVY:
+      case GRAVYN:
+        z_s= y[FIX(i,j,k)]+zv;
+        Dx = gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
+        Dy = gy[FIX(i,j ,k)]-gy[FIX(i,j-1,k)];
+        Dz = gz[FIX(i,j ,k)]-gz[FIX(i,j,k-1)];
+        b=6/5*eta*(gy[FIX(i,j,k)]-z_s);
+        a1=3.14f*b*b*(1-exp(-Dx*Dz/(b*b)))/(Dx*Dz);
+        vc=Kv*pow(Pc,0.33333)*pow((gy[FIX(i,j,k)]-z_s),-0.33333);
+        v_plume=a1*vc;//0.63
+        s_plume[FIX(i,j,k)]=v_plume-v[FIX(i,j,k)];
+        break;
+
+      case GRAVZ:
+      case GRAVZN:
+
+        z_s= z[FIX(i,j,k)]+zv;
+        Dx = gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
+        Dy = gy[FIX(i,j ,k)]-gy[FIX(i,j-1,k)];
+        Dz = gz[FIX(i,j ,k)]-gz[FIX(i,j,k-1)];
+        b=6/5*eta*(gz[FIX(i,j,k)]-z_s);
+        a1=3.14f*b*b*(1-exp(-Dx*Dy/(b*b)))/(Dx*Dy);
+        vc=Kv*pow(Pc,0.33333)*pow((gz[FIX(i,j,k)]-z_s),-0.33333);
+        v_plume=a1*vc;//0.63
+        s_plume[FIX(i,j,k)]=v_plume-w[FIX(i,j,k)];
+        break;
     
-    //T_amb= 0.25f*(T[FIX(i+1,j,k)]+T[FIX(i-1,j,k)]+T[FIX(i,j,k+1)]+T[FIX(i,j,k-1)]);
-    //T_amb= T[FIX(imax,j,k)];
-
-    //zv= y[FIX(i,j,k)]-pow((T_s-T_amb),-0.6)*pow(Kt,0.6)*pow(Pc,0.4);
-    //printf("zv=%f\n",zv);
-
-    jj=0;
-
-    for(jj=0;jj<para->geom->plmax;jj++) {
-      if(j+jj>=jmax || flagv[FIX(i,j+jj,k)]>=0) continue;
-      Dx = gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
-      Dy = gy[FIX(i,j ,k)]-gy[FIX(i,j-1,k)];
-      Dz = gz[FIX(i,j ,k)]-gz[FIX(i,j,k-1)];
-      b=6/5*eta*(gy[FIX(i,j+jj,k)]-z_s);
-      a1=3.14f*b*b*(1-exp(-Dx*Dz/(b*b)))/(Dx*Dz);
-      vc=Kv*pow(Pc,0.33333)*pow((gy[FIX(i,j+jj,k)]-z_s),-0.33333);
-      Qp=Kq*pow(Pc,0.33333)*pow((gy[FIX(i,j+jj,k)]-z_s),1.666667);
-      //v[FIX(i,j+jj,k)]=vc;
-      //v[FIX(i,j+jj,k)]=a1*vc;//average velocity by massflow
-      //v_plume=a1*vc;
-      v_plume=0.63f*a1*vc;//0.63
-      //v_plume=0.63f*Qp/(Dx*Dz);
-      s_plume[FIX(i,j+jj,k)]=v_plume-v[FIX(i,j+jj,k)];
-
-      //printf("vplume=%f\tV=%f\ts_plume=%f\n",Qp,v[FIX(i,j+jj,k)],s_plume[FIX(i,j+jj,k)]);
-
-      //alpha=(beta+vt[FIX(i,j,k)])/Prt;
-      //radius=gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
-      //qflux_r = 2.0f*radius/(b*b)*(T[FIX(i,j,k)]-T_amb)*(rho*cp*alpha)*exp(-radius*radius/(b*b));
-      //qflow_a = 5.0f/3.0f*3.1415f*dT/(gy[FIX(i,j+jj,k)]-zv)*(1-exp(-radius*radius/(b*b)));
-      //para->bc->qdiff =qflux_r;
-      //para->bc->qflow_a=qflow_a;
-      //para->bc->qflow_diff=qflow_a+2.0f*qflux_r*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])
-      //                             *((gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-      //                              +(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]));
-                                
-
     }
-
-
-      
-      /*if((j+jj)==jndex) {
-        mass=0;
-        area=0;
-        for(ii=1;ii<=imax;ii++)
-          for(kk=1;kk<=kmax;kk++) {
-            // if(flagp[FIX(ii,j+jj,kk)]>=0) continue;
-            dx=x[FIX(ii,j+jj,kk)]-x[FIX(i,j+jj,k)];
-            dz=z[FIX(ii,j+jj,kk)]-z[FIX(i,j+jj,k)];
-            dist=sqrt(dx*dx+dz*dz);
-            if(dist<=b) {
-              BINDEX[20][FIX(ii,j+jj,kk)]=1;
-              v[FIX(ii,j+jj,kk)]=vc* exp(-dist*dist/(b*b));
-              T[FIX(ii,j+jj,kk)]=dT* exp(-dist*dist/(b*b))+T_amb;
-              mass += 3600*v[FIX(ii,j+jj,kk)]*(gx[FIX(ii,j+jj,kk)]-gx[FIX(ii-1,j+jj,kk)])
-                                             *(gz[FIX(ii,j+jj,kk)]-gz[FIX(ii,j+jj,kk-1)]);
-              area += (gx[FIX(ii,j+jj,kk)]-gx[FIX(ii-1,j+jj,kk)])
-                     *(gz[FIX(ii,j+jj,kk)]-gz[FIX(ii,j+jj,kk-1)]);
-            }
-          }
-      } 
-    }*/
+    
   }
   
-  //printf("y=%f\tvc=%f\tmass=%f\tarea=%f\n",gy[FIX(1,jndex,1)],v[FIX(i_center,jndex
-   //                                                          ,k_center)],mass,area );
-
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+///\brief Compute the heat source temperature using plume model
+///
+/// For the coarse-grid FFD,if the heat source cell is too large,the predicted
+/// velocity at the heat source cell might not be accurate, the plume model can
+/// be applied to predict that veolcity, and to correct the FFD prediction.
+///
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void plume_thermal(PARA_DATA *para, REAL **var, int **BINDEX){
   int i, j, k;
-  int ii,jj,kk;
   int it;
   int imax = para->geom->imax, jmax = para->geom->jmax;
   int kmax = para->geom->kmax;
@@ -1085,12 +1175,9 @@ void plume_thermal(PARA_DATA *para, REAL **var, int **BINDEX){
   REAL rho=para->prob->rho;
   REAL cp=para->prob->spec;
   REAL beta=para->prob->beta;
-  REAL alpha;
-  REAL qflux_r,qflow_a;
   REAL b,dist,dT,dT1,radius;
   REAL vc;
- // REAL zv=para->geom->zv;
-  REAL zv=-3.0f; //-6.0
+  REAL zv=para->geom->zv;
   REAL z_s;
   REAL Kv=0.122;
   REAL Kt=0.45; //0.4
@@ -1106,47 +1193,65 @@ void plume_thermal(PARA_DATA *para, REAL **var, int **BINDEX){
   indexmax_us=para->geom->index[2];
 
 
-  /**********************************Heat sources********************************/
   for(it=indexmax+1;it<=indexmax_us;it++) {
     i=BINDEX[0][it];
     j=BINDEX[1][it];
     k=BINDEX[2][it];
     zone_num=BINDEX[16][FIX(i,j,k)]; 
-    z_s=y[FIX(i,j,k)]+zv;
-
-    para->geom->jplume=j;
-    para->geom->iplume=i;
-    para->geom->kplume=k;
     Pc=para->bc->t_bc[zone_num];
+    BINDEX[20][FIX(i,j,k)]=1;
+    Dx = gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
+    Dy = gy[FIX(i,j ,k)]-gy[FIX(i,j-1,k)];
+    Dz = gz[FIX(i,j ,k)]-gz[FIX(i,j,k-1)];
 
-    jj=0;
+
+
+    switch(para->prob->gravdir) {
+      case GRAVX:
+      case GRAVXN:
+        z_s=x[FIX(i,j,k)]+zv;
+        b=6/5*eta*(x[FIX(i,j,k)]-z_s);
+        dT=Kt*pow(Pc,0.66667)*pow((x[FIX(i,j,k)]-z_s),-1.66667);
+        dT1=b*b/(Dy*Dz)*(1-exp(-Dy*Dz/(b*b)))*dT;
+        T_temp[FIX(i,j,k)]= T[FIX(i,j,k)];
+        T_amb=0.25f*(T[FIX(i,j-1,k)]+T[FIX(i,j+1,k)]+T[FIX(i,j,k-1)]+T[FIX(i,j,k+1)]);
+        T_plume=dT+T_amb;
+        T0[FIX(i,j,k)] += (T_plume-T[FIX(i,j,k)]);
+
+        break;
+
+      case GRAVY:
+      case GRAVYN:
+
+        z_s=y[FIX(i,j,k)]+zv;
+        b=6/5*eta*(y[FIX(i,j,k)]-z_s);
+        dT=Kt*pow(Pc,0.66667)*pow((y[FIX(i,j,k)]-z_s),-1.66667);
+        dT1=b*b/(Dx*Dz)*(1-exp(-Dx*Dz/(b*b)))*dT;
+        T_temp[FIX(i,j,k)]= T[FIX(i,j,k)];
+        T_amb=0.25f*(T[FIX(i-1,j,k)]+T[FIX(i+1,j,k)]+T[FIX(i,j,k-1)]+T[FIX(i,j,k+1)]);
+        T_plume=dT+T_amb;
+        T0[FIX(i,j,k)] += (T_plume-T[FIX(i,j,k)]);
+
+        break;
+
+      case GRAVZ:
+      case GRAVZN:
+
+        z_s=z[FIX(i,j,k)]+zv;
+        b=6/5*eta*(z[FIX(i,j,k)]-z_s);
+        dT=Kt*pow(Pc,0.66667)*pow((z[FIX(i,j,k)]-z_s),-1.66667);
+        dT1=b*b/(Dx*Dy)*(1-exp(-Dx*Dy/(b*b)))*dT;
+        T_temp[FIX(i,j,k)]= T[FIX(i,j,k)];
+        T_amb=0.25f*(T[FIX(i-1,j,k)]+T[FIX(i+1,j,k)]+T[FIX(i,j-1,k)]+T[FIX(i,j+1,k)]);
+        T_plume=dT+T_amb;
+        T0[FIX(i,j,k)] += (T_plume-T[FIX(i,j,k)]);
+
+
+        break;
     
-    //for(jj=0;jj<para->geom->plmax;jj++) {
-    for(jj=0;jj<1;jj++) {
-      BINDEX[20][FIX(i,j+jj,k)]=1;
-      Dx = gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
-      Dy = gy[FIX(i,j ,k)]-gy[FIX(i,j-1,k)];
-      Dz = gz[FIX(i,j ,k)]-gz[FIX(i,j,k-1)];
-      b=6/5*eta*(y[FIX(i,j+jj,k)]-z_s);
-      dT=Kt*pow(Pc,0.66667)*pow((y[FIX(i,j+jj,k)]-z_s),-1.66667);
-      dT1=b*b/(Dx*Dz)*(1-exp(-Dx*Dz/(b*b)))*dT;
-      T_temp[FIX(i,j+jj,k)]= T[FIX(i,j+jj,k)];
-      //T_amb=T[FIX(imax,j+jj,k)];
-      T_amb=T[FIX(i-1,j+jj,k)];
-      //T[FIX(i,j+jj,k)]=dT+T_amb;
-      T_plume=dT+T_amb;
-      //T_plume=dT1+T_amb;
-      T0[FIX(i,j+jj,k)] += (T_plume-T[FIX(i,j+jj,k)]);
-      //T[FIX(i,j+jj,k)]=dT1+T_amb;
-      //T[FIX(i,j+jj,k)]=299;
-      //printf("Tplume=%f\t%f\t%f\n",T[FIX(i,j+jj,k)],T_plume, dT1);
-
-     }
- 
-
+    }
   }
-
-
 }
+
 
 

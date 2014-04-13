@@ -180,6 +180,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
       para->bc->t_bc[zone_num+i]=TMP;
       para->bc->d_bc[zone_num+i]=CONCENT;
       para->bc->um_bc[zone_num+i]=MOMENT;
+ 
     }
   }//end NBIN
       
@@ -379,6 +380,14 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   para->prob->beta=beta;
   para->prob->trefmax=trefmax;
   para->prob->spec=spec;
+
+  if(gravx>0) para->prob->gravdir=GRAVX;
+  if(gravx<0) para->prob->gravdir=GRAVXN;
+  if(gravy>0) para->prob->gravdir=GRAVY;
+  if(gravy<0) para->prob->gravdir=GRAVYN;
+  if(gravz>0) para->prob->gravdir=GRAVZ;
+  if(gravz<0) para->prob->gravdir=GRAVZN;
+
 
   fgets(string, 400, file_params);
   sscanf(string,"%f %f %f",&t_start,&t_delta,&t_total);
