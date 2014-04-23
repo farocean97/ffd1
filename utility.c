@@ -46,7 +46,7 @@ void psi_conservation(PARA_DATA *para, REAL **var, REAL *psi,
   REAL *flagp = var[FLAGP];
   REAL dA;
   REAL dt=para->mytime->dt;
-  REAL mass0=0, mass=0.0000001f,massstar=0;
+  REAL mass0=0, mass=0.0000001f;
   int IMAX = imax+2, IJMAX = (imax+2)*(jmax+2);
   REAL qin,qout;
   REAL area=0;
@@ -56,119 +56,59 @@ void psi_conservation(PARA_DATA *para, REAL **var, REAL *psi,
   REAL rho=para->prob->rho;
   REAL cp=para->prob->spec;
 
-  if(para->prob->plume_mod==1) {
-    mass0=0;
-    FOR_EACH_CELL
-      if(flagp[FIX(i,j,k)]<=0) {
-        var[LOCMIN][FIX(i,j,k)]=check_min(para, psi0, BINDEX[4][FIX(i,j,k)], 
-                                BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
-        var[LOCMAX][FIX(i,j,k)]=check_max(para, psi0, BINDEX[4][FIX(i,j,k)], 
-                                BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
-      }
-    END_FOR
-
-    qin= inflow(para,var,psi0,BINDEX);
-    qout=outflow(para,var,psi0,BINDEX);
-    mass0 +=(qin+qout)*dt;
-
-    FOR_EACH_CELL
-      if(flagp[FIX(i,j,k)]>0) continue;
-      dA= (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-          *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
-      area += dA;
-      if(BINDEX[20][FIX(i,j,k)]==1) mass0 += rho*cp*var[TMP2][FIX(i,j,k)]*dA;
-      else mass0 += rho*cp*psi0[FIX(i,j,k)]*dA;
-      massstar += rho*cp*psi0[FIX(i,j,k)]*dA;
-      mass  += rho*cp*psi[FIX(i,j,k)]*dA;
-      dens +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)]);
-      dens1 +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)]);   
-    END_FOR
-
-    eta=mass0-mass;
-    if(eta<0) {   // mass generation occured
-      FOR_EACH_CELL
-        if(flagp[FIX(i,j,k)]>0 ) continue;
-        dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
-                       *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                   *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                   *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-        psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
-                       *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                   *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                   *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-      END_FOR
-    }
-    else {
-      FOR_EACH_CELL
-        if(flagp[FIX(i,j,k)]>0 ) continue;
-          dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
-                       *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                   *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                   *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-          psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
-                      *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                  *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                  *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-      END_FOR
-    }
-  }
-  else { // without plume model
-    mass0=0;
-    FOR_EACH_CELL
-      if(flagp[FIX(i,j,k)]<=0)  {
+  mass0=0;
+  FOR_EACH_CELL
+    if(flagp[FIX(i,j,k)]<=0) {
       var[LOCMIN][FIX(i,j,k)]=check_min(para, psi0, BINDEX[4][FIX(i,j,k)], 
-                                      BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
+                              BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
       var[LOCMAX][FIX(i,j,k)]=check_max(para, psi0, BINDEX[4][FIX(i,j,k)], 
-                                      BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
-      }
-    END_FOR
+                              BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
+    }
+  END_FOR
 
-    qin= inflow(para,var,psi0,BINDEX);
-    qout=outflow(para,var,psi0,BINDEX);
-    mass0 +=(qin+qout)*dt;
+  qin= inflow(para,var,psi0,BINDEX);
+  qout=outflow(para,var,psi0,BINDEX);
+  mass0 +=(qin+qout)*dt;
 
+  FOR_EACH_CELL
+    if(flagp[FIX(i,j,k)]>0) continue;
+    dA= (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+        *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
+    area += dA;
+    if(BINDEX[20][FIX(i,j,k)]==1) mass0 += rho*cp*var[TMP2][FIX(i,j,k)]*dA;
+    else mass0 += rho*cp*psi0[FIX(i,j,k)]*dA;
+    mass  += rho*cp*psi[FIX(i,j,k)]*dA;
+    dens +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)]);
+    dens1 +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)]);   
+  END_FOR
+
+  eta=mass0-mass;
+  if(eta<0) {   // mass generation occured
     FOR_EACH_CELL
-      if(flagp[FIX(i,j,k)]>0) continue;
-      dA= (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                           *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
-      area += dA;
-      mass0 += rho*cp*psi0[FIX(i,j,k)]*dA;
-      massstar += rho*cp*psi0[FIX(i,j,k)]*dA;
-      mass  += rho*cp*psi[FIX(i,j,k)]*dA;
-      dens +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)]);
-      dens1 +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)]);   
+      if(flagp[FIX(i,j,k)]>0 ) continue;
+      dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
+                     *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                 *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                 *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+      psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
+                     *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                 *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                 *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
     END_FOR
-
-    massstar =mass0;
-    eta=mass0-mass;
-    if(eta<0) {   // mass generation occured
-      FOR_EACH_CELL
-        if(flagp[FIX(i,j,k)]>0) continue;
-        dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
-                        *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                    *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                    *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-        psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
-                        *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                    *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                    *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-      END_FOR
-    }
-    else {
-      FOR_EACH_CELL
-        if(flagp[FIX(i,j,k)]>0) continue;
-          dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
-                        *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                    *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                    *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-          psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
-                        *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                    *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                    *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-      END_FOR
-    }
-  } 
-
+  }
+  else {
+    FOR_EACH_CELL
+      if(flagp[FIX(i,j,k)]>0 ) continue;
+        dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
+                     *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                 *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                 *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+        psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
+                    *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+    END_FOR
+  }
 
 } // End of psi_conservation()
 
