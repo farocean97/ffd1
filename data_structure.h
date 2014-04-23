@@ -23,10 +23,7 @@
 
 #define IX(i,j,k) ((i)+(IMAX)*(j)+(IJMAX)*(k))+(IJK)
 #define FIX(i,j,k) ((i)+(IMAX)*(j)+(IJMAX)*(k))
-#define CIX(i,j) ((i)+ 3*(j))
-#define GIX(i,j) ((i)+ 8*(j))
 #define PIX(i,j,k) ((i)+ 2*(j)+4*(k))
-#define MIX(i,j,k,mglvl) ((i)+(IMAX[(mglvl)])*(j)+(IJMAX[(mglvl)])*(k)+(IJK[(mglvl)]))
 #define FOR_EACH_CELL for(i=1; i<=imax; i++) { for(j=1; j<=jmax; j++) { for(k=1; k<=kmax; k++) {
 #define FOR_ALL_CELL for(k=0; k<=kmax+1; k++) { for(j=0; j<=jmax+1; j++) { for(i=0; i<=imax+1; i++) {
 #define FOR_U_CELL for(k=1; k<=kmax; k++) { for(j=1; j<=jmax; j++) { for(i=1; i<=imax-1; i++) {
@@ -46,7 +43,6 @@
 #ifndef min
   #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
 #endif
-
 
 
 #define PI 3.1415926
@@ -139,38 +135,34 @@ typedef struct
   int   imax;     ///< number of interior cells in x-direction               
   int   jmax;     ///< number of interior cells in y-direction               
   int   kmax;     ///< number of interior cells in z-direction               
-  int   index[10];
-  int   findex;
-  int   zone_num;
-  int   zone_inlet;
-  int   zone_outlet;
-  int   zone_bl;
-  int   zone_wall;
-  int   zone_us;
-  int   zone_s;
-  int   iplume;
-  int   jplume;
-  int   kplume;
-  int   plmax;
-  REAL  zv;
-  REAL  dx;       /* length delta_x of one cell in x-direction              */
-  REAL  dy;       /* length delta_y of one cell in y-direction              */
-  REAL  dz;       /* length delta_z of one cell in z-direction              */
-  int   x_strech; /* streched grid in x direction                           */
-  int   uniform;  /* 1: uniform grid; 0: non-uniform grid                   */
+  int   index[10];///< index of different boundary type
+  int   zone_num; ///< total number of boundary cells
+  int   zone_inlet;///< index number of inlet
+  int   zone_outlet;///< index number of outlet
+  int   zone_bl;///< index number of blockage
+  int   zone_wall;///< index number of wall
+  int   zone_us;///< index number of user defined sources
+  int   zone_s; ///< index number of openings
+  int   iplume; ///< I-index number of plume cell
+  int   jplume;///< J-index number of plume cell
+  int   kplume;///< K-index number of plume cell
+  REAL  zv;    ///< virtual start location of plume model
+  REAL  dx;    ///< length delta_x of one cell in x-direction            
+  REAL  dy;    ///< length delta_y of one cell in y-direction              
+  REAL  dz;    ///<length delta_z of one cell in z-direction              
 } GEOM_DATA;
 
 typedef struct{
-  int   cal_mean;    /* 1: calculate mean value                              */
-  REAL  v_ref;       /* reference velocity                                   */
-  REAL  Temp_ref;    /* reference temperature                                */
-  int   plot_grid;   /* number of plotting grids                             */  
-  REAL  v_length;    /* the ratio factor of the velocity length              */
-  int   i_N;         /* the number of grids plotted in x direction           */
-  int   j_N;         /* the number of grids plotted in y direction           */
-  int   winx;        /* the resolution of screen at x direction              */
-  int   winy;        /* the resolution of screen at y direction              */ 
-  VERSION  version;  /* DEMO, DEBUG                                          */     
+  int   cal_mean;    ///< 1: calculate mean value                              
+  REAL  v_ref;       ///< reference velocity                                   
+  REAL  Temp_ref;    ///< reference temperature                                
+  int   plot_grid;   ///< number of plotting grids                               
+  REAL  v_length;    ///< the ratio factor of the velocity length              
+  int   i_N;         ///< the number of grids plotted in x direction           
+  int   j_N;         ///< the number of grids plotted in y direction           
+  int   winx;        ///< the resolution of screen at x direction              
+  int   winy;       ///< the resolution of screen at y direction             
+  VERSION  version;  ///< DEMO, DEBUG                                              
 } OUTP_DATA;
 
 typedef struct{
@@ -181,81 +173,75 @@ typedef struct{
   REAL  diff;     ///<  diffusivity for particle density                       
   REAL  alpha;    ///<  thermal diffusity                                      
   REAL  alpha_co; ///<  proption coefficient of thermal diffusity at the wall  
-  REAL  coeff_h;
+  REAL  coeff_h;  ///<  convective coefficient
   REAL  k;        ///<  thermal conductivity                                   
-  REAL  gravx;
-  REAL  gravy;
-  REAL  gravz;       ///<  gravity      
-  GRAVDIR gravdir;
+  REAL  gravx;    ///< gravity coefficient in x direction
+  REAL  gravy;     ///< gravity coefficient in y direction
+  REAL  gravz;     ///< gravity coefficient in z direction   
+  GRAVDIR gravdir;  ///< gravity direction
   REAL  beta;     ///<  coefficient of thermal expansion                       
-  REAL  cond;
-  REAL  trefmax;
-  REAL  spec;
-  REAL  force;    
-  REAL  source;  
-  int   readfile; /* Read old data file as initial value(1:yes, 0:no)       */
-  int   moive;    /* output data for make animation file(1:yes, 0:no)       */
-  int   output;   /* 0: have not been written; 1: done                      */ 
-  int   plume_mod; /* 0: not use; 1: use                                    */ 
-  TUR_MODEL tur_model; /* LAM, CHEN, 100NU                                   */ 
-  REAL  chen_a;   /* coefficeint of Chen's zero euqation turbulence model   */
-  REAL  Prt;      /* turbulent Prandl number */
-  REAL  Temp_opt;
-  REAL  tratio;
-  REAL  resu;
-  REAL  resv;
-  REAL  resw;
-  REAL  resp;
-  int  iteru;
-  int  iterv;
-  int  iterw;
-  int  iterp;
+  REAL  cond;     ///<  conductivity 
+  REAL  trefmax;  ///< reference temperature 
+  REAL  spec;     ///< specific heat 
+  int   readfile; ///< Read old data file as initial value(1:yes, 0:no)       */
+  int   moive;    ///< output data for make animation file(1:yes, 0:no)       */
+  int   output;   ///< 0: have not been written; 1: done                      */ 
+  int   plume_mod; ///< 0: not use; 1: use                                    */ 
+  TUR_MODEL tur_model; ///< LAM, CHEN, 100NU                                   */ 
+  REAL  chen_a;   ///< coefficeint of Chen's zero euqation turbulence model   */
+  REAL  Prt;      ///< turbulent Prandl number */
+  REAL  Temp_opt; ///< operational temperature
+  REAL  resu;     ///< residual of u 
+  REAL  resv;      ///< residual of v 
+  REAL  resw;      ///< residual of w 
+  REAL  resp;      ///< residual of p 
+  int  iteru;      ///< iteration number of u 
+  int  iterv;      ///< iteration number of v 
+  int  iterw;      ///< iteration number of w 
+  int  iterp;      ///< iteration number of p 
 }PROB_DATA;
 
 typedef struct{
-  int   NBOUT;
-  REAL  qs;
-  REAL  qdiff;
-  REAL  qflow_diff;
-  REAL  qflow_a;
-  REAL  u_bc[200];
-  REAL  v_bc[200];
-  REAL  w_bc[200];
-  REAL  t_bc[200];
-  REAL  d_bc[200];
-  REAL  fltmp[200];
-  REAL  um_bc[200];
-  REAL  zv_bc[200];
+  int   NBOUT; ///< number of outflow boundary
+  REAL  qs;    ///< heat generation rate of heat source cell
+  REAL  u_bc[200];///< u boundary value
+  REAL  v_bc[200];///< v boundary value
+  REAL  w_bc[200];///< w boundary value
+  REAL  t_bc[200];///< Temperature boundary value
+  REAL  d_bc[200];///< concentration boundary value
+  REAL  fltmp[200];///< Temperature boudnary condition type 
+  REAL  um_bc[200];///< momentum source value at the bounary 
+  REAL  zv_bc[200];///< virtual location value of heat source cell
 }BC_DATA;
 
 typedef struct 
 {
-  REAL   dt;         /* time step size                                      */
-  REAL   t;          /* current time                                        */
-  REAL   t_steady;   /* necessary time for steady flow                      */
-  int     t_output;   /* the interval of iteration step to output data       */
-  int     t_step;     /* current iteration step                              */
-  clock_t t_start;    /* starting CPU time                                   */
-  clock_t t_end;      /* ending CPU time                                     */
+  REAL   dt;         ///<  time step size                                      
+  REAL   t;          ///<  current time                                        
+  REAL   t_steady;   ///< necessary time for steady flow                      
+  int     t_output;  ///<  the interval of iteration step to output data       
+  int     t_step;     ///<  current iteration step                              
+  clock_t t_start;    ///<  starting CPU time                                   
+  clock_t t_end;      ///<  ending CPU time                                     
 }TIME_DATA;
 
 typedef struct 
 {
-  int   caseID;       /* 1: Pure Conduction with uniform grid                */
-  REAL   f_dif;      /* f_dif=0: explict scheme; f_dif=1: implict scheme    */
-  SOLVERTYPE solver;  /* GS, TDMA                                            */
-  int check_residual; /* 1: check, 0: donot check                            */
-  ADVECTION advection_solver; /* SEMI, LAX, UPWIND, UPWIND_NEW */  
-  INTERPOLATION interpolation; /* BILINEAR, FSJ */
-  int  read_file;     /* 1: Read previous file                               */ 
+  int   caseID;       ///<  1: Pure Conduction with uniform grid                
+  REAL   f_dif;      ///<  f_dif=0: explict scheme; f_dif=1: implict scheme    
+  SOLVERTYPE solver;  ///<  GS, TDMA                                            
+  int check_residual; ///<  1: check, 0: donot check                            
+  ADVECTION advection_solver; ///<  SEMI, LAX, UPWIND, UPWIND_NEW */  
+  INTERPOLATION interpolation; ///<  BILINEAR, FSJ */
+  int  read_file;     ///<  1: Read previous file                              
 }SOLV_DATA;
 
 typedef struct 
 {
-  GEOM_DATA  *geom;
-  OUTP_DATA  *outp;
-  PROB_DATA  *prob;
-  TIME_DATA  *mytime;
-  BC_DATA    *bc;
-  SOLV_DATA  *solv;
+  GEOM_DATA  *geom; ///< Pointer to geometry parameter
+  OUTP_DATA  *outp; ///< Pointer to output parameter
+  PROB_DATA  *prob; ///< Pointer to problem parameter
+  TIME_DATA  *mytime;///< Pointer to time parameter
+  BC_DATA    *bc;    ///< Pointer to boundary parameter
+  SOLV_DATA  *solv;  ///< Pointer to solver parameter
 }PARA_DATA;

@@ -1,21 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////
-///
-/// \file   utility.h
-///
-/// \brief  Various functions used for data processing in FFD
-///
-/// \author Mingang Jin, Qingyan Chen
-///         Purdue University
-///         Jin56@purdue.edu, YanChen@purdue.edu
-///         Wangda Zuo
-///         University of Miami
-///         W.Zuo@miami.edu
-///
-/// \date   04/02/2013
-///
-/// This file provides functions for processing the data in FFD
-///
-///////////////////////////////////////////////////////////////////////////////
 
 void psi_conservation(PARA_DATA *para, REAL **var, REAL *psi,REAL *psi0,int **BINDEX);
 

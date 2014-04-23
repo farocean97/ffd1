@@ -58,7 +58,7 @@ void FFD_solver(PARA_DATA *para, REAL **var,int **BINDEX) {
   REAL *x = var[X], *y = var[Y], *z = var[Z];
   REAL *gx = var[GX], *gy = var[GY], *gz = var[GZ];
   REAL *vsx=var[VSX];
-  int cal_mean = para->outp->cal_mean;
+  //int cal_mean = para->outp->cal_mean;
 
   lengthscale(para,var); //zero equation length scale
   

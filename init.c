@@ -53,7 +53,6 @@ void default_value(PARA_DATA *para){
   para->mytime->t_output = 1000;
   para->mytime->t  = 0.0;
   para->mytime->t_start = 0.0;
-  para->geom->x_strech = 0;
   para->mytime->t_step = 0;
   para->mytime->t_start = clock();
 
@@ -191,7 +190,6 @@ void clear_data(PARA_DATA *para, REAL **var, int **BINDEX) {
   
   para->mytime->t = 0.0;
   para->mytime->t_step = 0;
-  para->outp->cal_mean = 0;
 
   for(i=0; i<size; i++)  {
     var[GX][i]     = 0.0;

@@ -29,7 +29,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 void input_para(PARA_DATA *para) {
   
-  para->geom->uniform = 0; //1: uniform; 0: non-uniform 
   para->mytime->dt = 0.1f; 
   para->mytime->t_steady = 100.0f;
   para->mytime->t_output =1000 ;
@@ -44,7 +43,6 @@ void input_para(PARA_DATA *para) {
   para->prob->Prt=0.85f;
   para->bc->qs=0;
   para->prob->plume_mod=1;
-  para->geom->plmax=3; //5
   para->geom->zv=-1.0f;
 
 } // End of input_para( )

@@ -328,7 +328,7 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
   REAL cp=para->prob->spec;
   REAL T_amb=292.5f;
   REAL qflux;
-  REAL qflow_a=para->bc->qflow_a;
+  // REAL qflow_a=para->bc->qflow_a;
   int priority=0;//the priority of storing temperature value at the cell.
   REAL *flagp = var[FLAGP],*flagu = var[FLAGU];
   REAL *flagv = var[FLAGV],*flagw = var[FLAGW];

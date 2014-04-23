@@ -315,6 +315,6 @@ int main() {
   free_data(var);
   free_index(BINDEX);
   
-  getchar();  
+  //getchar();  
   exit ( 0 );
 } // End of main( )
