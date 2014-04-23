@@ -187,6 +187,10 @@ typedef struct{
   int   moive;    ///< output data for make animation file(1:yes, 0:no)       */
   int   output;   ///< 0: have not been written; 1: done                      */ 
   int   plume_mod; ///< 0: not use; 1: use                                    */ 
+  int   Tsolve;   ///< activate temperature solver: 1:solve
+  int   Toutput;  ///< activate temperature output;
+  int   Csolve;  ///< activate specices solver: 1:solve
+  int   Coutput; ///< activate specices output: 1:solve
   TUR_MODEL tur_model; ///< LAM, CHEN, 100NU                                   */ 
   REAL  chen_a;   ///< coefficeint of Chen's zero euqation turbulence model   */
   REAL  Prt;      ///< turbulent Prandl number */

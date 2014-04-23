@@ -69,7 +69,6 @@ void advection(PARA_DATA *para, REAL **var, int var_type,
   switch(var_type){
 
     case TEMP:
-    case DEN:
       // For temperautre/Density,traceback from cell center
       traceback(para,var,BINDEX);
 
@@ -106,6 +105,20 @@ void advection(PARA_DATA *para, REAL **var, int var_type,
       END_FOR
       break;
 
+    case DEN:
+      traceback(para,var,BINDEX);
+
+      FOR_EACH_CELL
+
+        if(flag[FIX(i,j,k)]==1) continue;
+        p=BINDEX[4][FIX(i,j,k)];
+        q=BINDEX[5][FIX(i,j,k)];
+        r=BINDEX[6][FIX(i,j,k)];
+        d[FIX(i,j,k)] = interpolation_temp(para,var, d0, fx[FIX(i,j,k)], 
+                                  fy[FIX(i,j,k)], fz[FIX(i,j,k)],i,j,k, p,q,r);
+
+      END_FOR
+      break;
     // For U cell,traceback from cell surface
     case VX:
       traceback_UVW(para, var, var_type, flag, BINDEX);

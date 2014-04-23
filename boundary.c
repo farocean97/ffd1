@@ -754,53 +754,280 @@ void set_bnd_temp(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BIN
 ///\param para Pointer to FFD parameters
 ///\param var Pointer to FFD simulation variables
 ///\param var_type The type of variable
-///\param p Pointer to the variable needing the boundary conditions
+///\param psi Pointer to the variable needing the boundary conditions
 ///\param BINDEX Pointer to boundary index
 ///
 ///\return void No return needed
 ///////////////////////////////////////////////////////////////////////////////
-void set_bnd_density(PARA_DATA *para, REAL **var, int var_type, REAL *p,int **BINDEX) {
+void set_bnd_density(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **BINDEX) {
   int i, j, k;
+  int it,zone_num;
+  int pindexmax_x,pindexmax_y,pindexmax_z,indexmax,indexmax_us;
   int imax = para->geom->imax, jmax = para->geom->jmax;
   int kmax = para->geom->kmax;
   int IMAX = imax+2, IJMAX = (imax+2)*(jmax+2);
   REAL *aw = var[AW], *ae = var[AE], *as = var[AS], *an = var[AN];
-  REAL *af = var[AF], *ab = var[AB];
-  REAL *flagp = var[FLAGP];
+  REAL *af = var[AF], *ab = var[AB],*ap=var[AP],*b=var[B],*q=var[FLUX];
+  REAL *gx = var[GX], *gy = var[GY], *gz = var[GZ];
+  REAL *fx = var[FX], *fy = var[FY], *fz = var[FZ];
+  REAL rho=para->prob->rho;
+  int priority=0;//the priority of storing  value at the cell.
+  REAL *flagp = var[FLAGP],*flagu = var[FLAGU];
+  REAL *flagv = var[FLAGV],*flagw = var[FLAGW];
 
-  FOR_ALL_CELL
-    if(flagp[FIX(i,j,k)]>0) continue;
-    if(flagp[FIX(i,j,k)]==0) {
-      p[FIX(i,j,k)]=0;
-      p[FIX(0,11,11)]=100;
+  indexmax=para->geom->index[1];
+  indexmax_us=para->geom->index[2];
+  pindexmax_x=para->geom->index[3];
+  pindexmax_y=para->geom->index[4];
+  pindexmax_z=para->geom->index[5];
+
+  for(it=1;it<=indexmax;it++){
+    priority=0;
+    i=BINDEX[0][it];
+    j=BINDEX[1][it];
+    k=BINDEX[2][it];
+    
+    //X direction EAST FACE
+    if(i<imax && (flagp[FIX(i+1,j,k)]<=0)) {
+      switch((int)flagu[FIX(i,j,k)]){
+        case 0: //inlet_surface
+          zone_num=BINDEX[13][FIX(i,j,k)];
+          priority=4;
+          psi[FIX(i,j,k)]=para->bc->d_bc[zone_num];
+          break;
+        case 1: //outlet_surface
+          aw[FIX(i+1,j,k)]=0;
+          if(priority<3){
+            psi[FIX(i,j,k)]=psi[FIX(i+1,j,k)];
+            priority=3;
+          }
+          break;
+        case 2: //wall_surface
+          zone_num=BINDEX[13][FIX(i,j,k)];
+          aw[FIX(i+1,j,k)]=0;
+          if(priority<2){
+            psi[FIX(i,j,k)]= psi[FIX(i+1,j,k)];
+            priority=2;
+          }  
+          break;
+        case 3://block_wall_surface
+          zone_num=BINDEX[16][FIX(i,j,k)];
+          aw[FIX(i+1,j,k)]=0;
+          if(priority<=1){
+            psi[FIX(i,j,k)]=psi[FIX(i+1,j,k)]; 
+            priority=1;
+          }  
+          break;
+      }
     }
-    else{
-      if(flagp[FIX(i-1,j,k)]>0){
-        p[FIX(i-1,j,k)]=p[FIX(i,j,k)];
-        aw[FIX(i,j,k)]=0;
-      }
-      if(flagp[FIX(i+1,j,k)]>0){
-        p[FIX(i+1,j,k)]=p[FIX(i,j,k)]; 
-        ae[FIX(i,j,k)]=0;
-      }
-      if(flagp[FIX(i,j-1,k)]>0)  {
-        p[FIX(i,j-1,k)]=p[FIX(i,j,k)]; 
-        as[FIX(i,j,k)]=0;
-      }
-      if(flagp[FIX(i,j+1,k)]>0)  {
-        p[FIX(i,j+1,k)]=p[FIX(i,j,k)];
-        an[FIX(i,j,k)]=0;
-      }
-      if(flagp[FIX(i,j,k-1)]>0)  {
-        p[FIX(i,j,k-1)]=p[FIX(i,j,k)];  
-        ab[FIX(i,j,k)]=0;
-      }
-      if(flagp[FIX(i,j,k+1)]>0)  {
-        p[FIX(i,j,k+1)]=p[FIX(i,j,k)]; 
-        af[FIX(i,j,k)]=0;
+    
+    //X direction WEST FACE
+    if(i>0 && (flagp[FIX(i-1,j,k)]<=0)) {
+      switch((int)flagu[FIX(i-1,j,k)]){
+        case 0:
+          zone_num=BINDEX[13][FIX(i-1,j,k)];
+          priority=4;
+          psi[FIX(i,j,k)]=para->bc->d_bc[zone_num];
+          break;
+        case 1:
+          ae[FIX(i-1,j,k)]=0;
+          if(priority<3){
+            psi[FIX(i,j,k)]=psi[FIX(i-1,j,k)];
+            priority=3;
+          }
+          break;
+        case 2:
+          zone_num=BINDEX[13][FIX(i-1,j,k)];
+          ae[FIX(i-1,j,k)]=0;
+          if(priority<2){
+              psi[FIX(i,j,k)]=psi[FIX(i-1,j,k)];
+              priority=2;
+          } 
+          break;
+        case 3:
+          zone_num=BINDEX[16][FIX(i,j,k)];
+          ae[FIX(i-1,j,k)]=0;
+          if(priority<=1) {
+              psi[FIX(i,j,k)]=psi[FIX(i-1,j,k)]; 
+              priority=1;
+          }
+          break;
       }
     }
-    END_FOR
+    
+    //Y direction NORTH FACE
+    if(j<jmax && (flagp[FIX(i,j+1,k)]<=0)) {
+      switch( (int)flagv[FIX(i,j,k)]){
+        case 0:
+          zone_num=BINDEX[14][FIX(i,j,k)];
+          priority=4;
+          psi[FIX(i,j,k)]=para->bc->d_bc[zone_num];
+          break;
+        case 1:
+          as[FIX(i,j+1,k)]=0;
+          if(priority<3){
+            psi[FIX(i,j,k)]=psi[FIX(i,j+1,k)];
+            priority=3;
+          }
+          break;
+        case 2:
+          zone_num=BINDEX[14][FIX(i,j,k)];
+          as[FIX(i,j+1,k)]=0;
+          if(priority<2){
+              psi[FIX(i,j,k)]= psi[FIX(i,j+1,k)]; 
+              priority=2;
+          }
+          break;
+        case 3:
+          zone_num=BINDEX[16][FIX(i,j,k)];
+          as[FIX(i,j+1,k)]=0;
+          if(priority<=1){
+              psi[FIX(i,j,k)]= psi[FIX(i,j+1,k)]; 
+              priority=1;
+          }
+          break;
+      }
+    }
+    
+    
+    //Y direction SOUTH FACE
+    if(j>0 && (flagp[FIX(i,j-1,k)]<=0)){
+      switch( (int)flagv[FIX(i,j-1,k)]){
+        case 0:
+          zone_num=BINDEX[14][FIX(i,j-1,k)];
+          priority=4;
+          psi[FIX(i,j,k)]=para->bc->d_bc[zone_num];
+          break;
+        case 1:
+          an[FIX(i,j-1,k)]=0;
+          if(priority<3){
+            psi[FIX(i,j,k)]= psi[FIX(i,j-1,k)];
+            priority=3;
+          }
+          break;
+        case 2:
+          zone_num=BINDEX[14][FIX(i,j-1,k)];
+          an[FIX(i,j-1,k)]=0;
+          if(priority<2){
+             psi[FIX(i,j,k)]=psi[FIX(i,j-1,k)];
+             priority=2;
+          }
+          break;
+        case 3:
+          zone_num=BINDEX[16][FIX(i,j,k)];
+          an[FIX(i,j-1,k)]=0;
+          if(priority<=1){
+              psi[FIX(i,j,k)]= psi[FIX(i,j-1,k)];
+              priority=1;
+          }
+          break;
+      }
+    }
+
+
+    //Z direction FRONT FACE
+    if(k<kmax && (flagp[FIX(i,j,k+1)]<=0)){
+      switch( (int)flagw[FIX(i,j,k)]){
+        case 0:
+          zone_num=BINDEX[15][FIX(i,j,k)];
+          priority=4;
+          psi[FIX(i,j,k)]=para->bc->d_bc[zone_num];
+          break;
+        case 1:
+          ab[FIX(i,j,k+1)]=0;
+          if(priority<3){
+            psi[FIX(i,j,k)]=psi[FIX(i,j,k+1)];
+            priority=3;
+          }
+          break;
+        case 2:
+          zone_num=BINDEX[15][FIX(i,j,k)];
+          ab[FIX(i,j,k+1)]=0;
+          if(priority<2){
+              psi[FIX(i,j,k)]= psi[FIX(i,j,k+1)];
+              priority=2;
+          }
+          break;
+        case 3:
+          zone_num=BINDEX[16][FIX(i,j,k)];
+          ab[FIX(i,j,k+1)]=0;
+          if(priority<=1){
+              psi[FIX(i,j,k)]= psi[FIX(i,j,k+1)];
+              priority=1;
+          }
+          break;
+      }
+    }
+    
+    
+    //Z direction BACK FACE
+    if(k>0 && (flagp[FIX(i,j,k-1)]<=0)){
+      switch( (int)flagw[FIX(i,j,k-1)]){
+        case 0:
+          zone_num=BINDEX[15][FIX(i,j,k-1)];
+          priority=4;
+          psi[FIX(i,j,k)]=para->bc->d_bc[zone_num];
+          break;
+        case 1:
+          af[FIX(i,j,k-1)]=0;
+          if(priority<3){
+            psi[FIX(i,j,k)]=psi[FIX(i,j,k-1)];
+            priority=3;
+          }
+          break;
+        case 2:
+          zone_num=BINDEX[15][FIX(i,j,k-1)];
+          af[FIX(i,j,k-1)]=0;
+          if(priority<2){
+              psi[FIX(i,j,k)]= psi[FIX(i,j,k-1)]; 
+              priority=2;
+          }
+          break;
+        case 3:
+          zone_num=BINDEX[16][FIX(i,j,k)];
+          af[FIX(i,j,k-1)]=0;
+          if(priority<=1) {
+              psi[FIX(i,j,k)]= psi[FIX(i,j,k-1)];
+              priority=1;
+          }
+          break;
+      }
+    }
+  }
+
+  for(it=1;it<=pindexmax_x;it++) {
+    i=BINDEX[17][it];
+    j=BINDEX[18][it];
+    k=BINDEX[19][it];
+    ae[FIX(i,j,k)]=0;
+    aw[FIX(i+1,j,k)]=0;
+  }
+  for(it=pindexmax_x+1;it<=pindexmax_y;it++) {
+    i=BINDEX[17][it];
+    j=BINDEX[18][it];
+    k=BINDEX[19][it];
+    an[FIX(i,j,k)]=0;
+    as[FIX(i,j+1,k)]=0;
+  }
+  for(it=pindexmax_y+1;it<=pindexmax_z;it++) {
+    i=BINDEX[17][it];
+    j=BINDEX[18][it];
+    k=BINDEX[19][it];
+    af[FIX(i,j,k)]=0;
+    ab[FIX(i,j,k+1)]=0;
+  }
+  
+  //Assigning boundary condtions for heat source cell
+  for(it=indexmax+1;it<=indexmax_us;it++) {
+    i=BINDEX[0][it];
+    j=BINDEX[1][it];
+    k=BINDEX[2][it];
+    zone_num=BINDEX[16][FIX(i,j,k)];
+
+    b[FIX(i,j,k)] += para->bc->d_bc[zone_num]/rho;
+
+  }
+ 
 
 } // End of set_bnd_pressure( )
 

@@ -307,7 +307,7 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 
           if(BINDEX[20][FIX(i-1,j,k)]==1) aw[FIX(i,j,k)]= 0;
           if(BINDEX[20][FIX(i+1,j,k)]==1) ae[FIX(i,j,k)]= 0;
-         if(BINDEX[20][FIX(i,j,k+1)]==1) af[FIX(i,j,k)]= 0;
+          if(BINDEX[20][FIX(i,j,k+1)]==1) af[FIX(i,j,k)]= 0;
           if(BINDEX[20][FIX(i,j,k-1)]==1) ab[FIX(i,j,k)]= 0; 
           if(BINDEX[20][FIX(i,j+1,k)]==1) an[FIX(i,j,k)]= 0;
           if(BINDEX[20][FIX(i,j-1,k)]==1) as[FIX(i,j,k)]= 0; 
@@ -329,8 +329,9 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 
     //Coefficients for species    
     case DEN:  
-      kapa = para->prob->nu;
+      kapa = para->prob->nu; 
       FOR_EACH_CELL
+        if(flagp[FIX(i,j,k)]>0) continue;
         dxe=x[FIX(i+1,j,k)]-x[FIX(i,j,k)];
         dxw=x[FIX(i,j,k)]-x[FIX(i-1,j,k)];
         dyn=y[FIX(i,j+1,k)]-y[FIX(i,j,k)];
@@ -340,25 +341,42 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         Dx=gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
         Dy=gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)];
         Dz=gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)];
-        
-        aw[FIX(i,j,k)]= kapa*Dy*Dz/dxw;
-        ae[FIX(i,j,k)]= kapa*Dy*Dz/dxe;
-        an[FIX(i,j,k)]= kapa*Dx*Dz/dyn;
-        as[FIX(i,j,k)]= kapa*Dx*Dz/dys;
-        af[FIX(i,j,k)]= kapa*Dx*Dy/dzf;
-        ab[FIX(i,j,k)]= kapa*Dx*Dy/dzb;
+
+        if(para->prob->tur_model == CHEN)  {
+          aw[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i-1,j,k)]))/Prt*Dy*Dz/dxw;
+          ae[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i+1,j,k)]))/Prt*Dy*Dz/dxe;
+          an[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j+1,k)]))/Prt*Dx*Dz/dyn;
+          as[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j-1,k)]))/Prt*Dx*Dz/dys;
+          af[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j,k+1)]))/Prt*Dx*Dy/dzf;
+          ab[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j,k-1)]))/Prt*Dx*Dy/dzb;
+        }
+        else {
+          aw[FIX(i,j,k)]= kapa/Prt*Dy*Dz/dxw;
+          ae[FIX(i,j,k)]= kapa/Prt*Dy*Dz/dxe;
+          an[FIX(i,j,k)]= kapa/Prt*Dx*Dz/dyn;
+          as[FIX(i,j,k)]= kapa/Prt*Dx*Dz/dys;
+          af[FIX(i,j,k)]= kapa/Prt*Dx*Dy/dzf;
+          ab[FIX(i,j,k)]= kapa/Prt*Dx*Dy/dzb; 
+        }
+
         ap0[FIX(i,j,k)]= Dx*Dy*Dz/dt;
         b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)];
+
       END_FOR
 
       set_bnd(para, var, var_type, psi,BINDEX);
 
       FOR_EACH_CELL
-        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)]
-                       + an[FIX(i,j,k)]  + as[FIX(i,j,k)] + af[FIX(i,j,k)]
+        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] 
+                       + an[FIX(i,j,k)]  + as[FIX(i,j,k)] + af[FIX(i,j,k)] 
                        + ab[FIX(i,j,k)];
       END_FOR
-        
       break;
   }
 

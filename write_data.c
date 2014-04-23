@@ -225,7 +225,7 @@ int write_SCI(PARA_DATA *para, REAL **var, char *name) {
   IV=1;
   IW=1;
   IT=1;
-  IC1=0;
+  IC1=1;
   IC2=0;
   IC3=0;
   IC4=0;
@@ -335,10 +335,16 @@ int write_SCI(PARA_DATA *para, REAL **var, char *name) {
      fprintf( file1, "\n");
    }
 
+
    for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", T[FIX(i,j,k)]);  //turbulence intensity 
      fprintf( file1, "\n");
     }
 
+   if(IC1==1)
+   {
+   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", d[FIX(i,j,k)]);   
+     fprintf( file1, "\n");
+   }
 
   fclose(file1);
   

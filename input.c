@@ -110,6 +110,10 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   int index=1;
   int IMAX = imax+2, IJMAX = (imax+2)*(jmax+2); 
   int zone_num=0;
+  int plume_mod;
+  int var_temp;
+  int Tsolve,Toutput,Csolve,Coutput;
+  int Turbmodel;
   char *temp, string[400];
   float *delx,*dely,*delz;
   REAL *flagp = var[FLAGP],*flagu = var[FLAGU];
@@ -392,7 +396,19 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   //reading other parameters
   temp = fgets(string, 400, file_params); //skip maximum iteration
   temp = fgets(string, 400, file_params); //skip convergence rate
-  temp = fgets(string, 400, file_params); //skip Turbulence model
+
+  fgets(string,400, file_params);
+  sscanf(string, "%d",&Turbmodel); 
+  switch(Turbmodel) {
+    case 2:
+      para->prob->tur_model=CHEN;
+      break;
+    default:
+      para->prob->tur_model=LAM;
+      break;
+  }
+
+
   temp = fgets(string, 400, file_params); //skip initial value
   temp = fgets(string, 400, file_params); //skip minimum value
   temp = fgets(string, 400, file_params); //skip maximum value
@@ -408,8 +424,31 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   para->solv->read_file=restart;
 
   temp = fgets(string, 400, file_params); //skip print frequency
-  temp = fgets(string, 400, file_params); //skip Pressure variable Y/N
-  temp = fgets(string, 400, file_params); //skip Steady state, hall_partition_geom.
+
+  fgets(string,400, file_params);
+  sscanf(string, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", 
+                  &var_temp,&var_temp,
+                  &Tsolve,&Toutput,
+                  &var_temp,&var_temp,
+                  &var_temp,&var_temp,
+                  &var_temp,&var_temp,
+                  &var_temp,&var_temp,
+                  &Csolve,&Coutput,
+                  &var_temp,&var_temp,
+                  &var_temp,&var_temp,
+                  &var_temp,&var_temp,
+                  &var_temp,&var_temp,
+                  &var_temp,&var_temp );
+  para->prob->Tsolve=Tsolve;
+  para->prob->Toutput=Toutput;
+  para->prob->Csolve=Csolve;
+  para->prob->Coutput=Coutput;
+
+
+
+  fgets(string,400, file_params);
+  sscanf(string, "%d %d", &var_temp,&plume_mod);
+  para->prob->plume_mod=plume_mod;
 
   //reading fluid property.
   fgets(string, 400, file_params);
@@ -422,7 +461,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   para->prob->gravy=gravy;
   para->prob->gravz=gravz;
   para->prob->beta=beta;
-  para->prob->trefmax=trefmax;
+  para->prob->Temp_opt=trefmax;
   para->prob->spec=spec;
 
   if(gravx>0) para->prob->gravdir=GRAVX;
