@@ -1101,10 +1101,12 @@ void plume(PARA_DATA *para, REAL **var, int **BINDEX){
         Dx = gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
         Dy = gy[FIX(i,j ,k)]-gy[FIX(i,j-1,k)];
         Dz = gz[FIX(i,j ,k)]-gz[FIX(i,j,k-1)];
+        //plume model coefficient
         b=6/5*eta*(gx[FIX(i,j,k)]-z_s);
         a1=3.14f*b*b*(1-exp(-Dy*Dz/(b*b)))/(Dy*Dz);
         vc=Kv*pow(Pc,0.33333)*pow((gx[FIX(i,j,k)]-z_s),-0.33333);
         v_plume=a1*vc;//0.63
+        //calculating the source term in momentum equation
         s_plume[FIX(i,j,k)]=v_plume-u[FIX(i,j,k)];
         break;
 
@@ -1175,8 +1177,7 @@ void plume_thermal(PARA_DATA *para, REAL **var, int **BINDEX){
   REAL rho=para->prob->rho;
   REAL cp=para->prob->spec;
   REAL beta=para->prob->beta;
-  REAL b,dist,dT,dT1,radius;
-  REAL vc;
+  REAL b,dT,dT1;
   REAL zv=para->geom->zv;
   REAL z_s;
   REAL Kv=0.122;

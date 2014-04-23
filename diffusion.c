@@ -1,3 +1,24 @@
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   diffusion.c
+///
+/// \brief  Subroutines for solving the diffison equation
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2014
+///
+/// This file provides functions that used for solving the diffusion equation
+/// in FFD. By calling the function \c diffusion(), the coefficients of the 
+/// discretized equation can be specified through \c coef_diff(), and then the
+/// equation solver will be applied to solve the equation.
+///
+///////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,70 +29,45 @@
 #include "utility.h"
 #include "chen_zero_equ_model.h"
 
-/******************************************************************************
-| diffusion term 
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Entrance of calculating diffusion equation
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param var_type Type of variable
+///\param psi Pointer to the variable at current time step
+///\param psi0 Pointer to the variable at previous time step
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void diffusion(PARA_DATA *para, REAL **var, int var_type, 
                REAL *psi, REAL *psi0, int **BINDEX) {
 
   // Define the coefcients for euqations
   coef_diff(para, var, psi, psi0, var_type, BINDEX);
 
+  // Solving the discretized equation
   equ_solver(para, var, var_type, psi);
 
-  // Define B.C.
+  // Define the values of variables at B.C.
   set_bnd(para, var, var_type, psi, BINDEX);
           
 } // End of diffusion( )
 
 
-void source(PARA_DATA *para, REAL **var, int var_type, 
-               REAL *psi, REAL *psi0, int **BINDEX) {
-  int imax = para->geom->imax, jmax = para->geom->jmax;
-  int kmax = para->geom->kmax;
-  int IMAX = imax+2, IJMAX = (imax+2)*(jmax+2);
-  int i,j,k;
-  int it,zone_num;
-  int indexmax,indexmax_us;
-  REAL Dx,Dy,Dz;
-  REAL *b=var[B];
-  REAL *gx = var[GX], *gy = var[GY], *gz = var[GZ],*T=var[TEMP];
-  REAL rho=para->prob->rho;
-  REAL cp=para->prob->spec;
-  REAL dt=para->mytime->dt;
-  REAL *flagp = var[FLAGP];
-
-  indexmax=para->geom->index[1];
-  indexmax_us=para->geom->index[2];
-
-  FOR_EACH_CELL
-    b[FIX(i,j,k)] = 0;
-  END_FOR
-    
-  for(it=indexmax+1;it<=indexmax_us;it++) {
-    i=BINDEX[0][it];
-    j=BINDEX[1][it];
-    k=BINDEX[2][it];
-    zone_num=BINDEX[16][FIX(i,j,k)]; 
-    b[FIX(i,j,k)] = para->bc->t_bc[zone_num]/(rho*cp); 
-  }
-  
-  FOR_EACH_CELL
-    Dx=gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)];
-    Dy=gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)];
-    Dz=gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)];
-    
-    psi[FIX(i,j,k)]= dt/(Dx*Dy*Dz)*b[FIX(i,j,k)]+psi0[FIX(i,j,k)];
-    // printf("T=%f\t%f\n",psi[FIX(i,j,k)],psi0[FIX(i,j,k)]);
- 
-  END_FOR
-          
-} // End of diffusion( )
-
-
-/******************************************************************************
-| Coeffcient for Diffusion 
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Specifying the coefficients for equation
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param psi Pointer to the variable at current time step
+///\param psi0 Pointer to the variable at previous time step
+///\param var_type Type of variable
+///\param BINDEX Pointer to boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0, 
                int var_type, int **BINDEX) {
   int i, j, k;
@@ -98,9 +94,11 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
   REAL *s_plume=var[ER];
 
 
-  // define kapa
+
   switch (var_type)  {
+    // coefficients for velocity u
     case VX: 
+      //Specifying the value for viscosity.
       kapa = para->prob->nu; 
 
       FOR_U_CELL
@@ -114,19 +112,21 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         Dx=x[FIX(i+1,j,k)]-x[FIX(i,j,k)];
         Dy=gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)];
         Dz=gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)];
-
+        
+        //zero equation model
         if(para->prob->tur_model == CHEN)  {
           aw[FIX(i,j,k)]= (kapa+vt[FIX(i,j,k)])*Dy*Dz/dxw;
           ae[FIX(i,j,k)]= (kapa+vt[FIX(i+1,j,k)])*Dy*Dz/dxe;
           an[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i+1,j,k)]
-                                      +vt[FIX(i,j+1,k)]+vt[FIX(i+1,j+1,k)]))*Dx*Dz/dyn;
+                          +vt[FIX(i,j+1,k)]+vt[FIX(i+1,j+1,k)]))*Dx*Dz/dyn;
           as[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i+1,j,k)]
-                                      +vt[FIX(i,j-1,k)]+vt[FIX(i+1,j-1,k)]))*Dx*Dz/dys;
+                          +vt[FIX(i,j-1,k)]+vt[FIX(i+1,j-1,k)]))*Dx*Dz/dys;
           af[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i+1,j,k)]
-                                      +vt[FIX(i,j,k+1)]+vt[FIX(i+1,j,k+1)]))*Dx*Dy/dzf;
+                          +vt[FIX(i,j,k+1)]+vt[FIX(i+1,j,k+1)]))*Dx*Dy/dzf;
           ab[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i+1,j,k)]
-                                      +vt[FIX(i,j,k-1)]+vt[FIX(i+1,j,k-1)]))*Dx*Dy/dzb;
+                          +vt[FIX(i,j,k-1)]+vt[FIX(i+1,j,k-1)]))*Dx*Dy/dzb;
         }
+        //laminar model
         else  { 
           aw[FIX(i,j,k)]= kapa*Dy*Dz/dxw;
           ae[FIX(i,j,k)]= kapa*Dy*Dz/dxe;
@@ -138,19 +138,23 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         
         ap0[FIX(i,j,k)]= Dx*Dy*Dz/dt;
         b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)];
+        //buoyancy forces && plume model correction
         if(para->prob->gravdir==GRAVX || para->prob->gravdir==GRAVXN ) {
-          b[FIX(i,j,k)] -= beta*gravx *(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i+1,j,k)])-Temp_opt)*Dx*Dy*Dz;
-          b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model  
+          b[FIX(i,j,k)] -= beta*gravx *(0.5f*(Temp[FIX(i,j,k)]
+                                       +Temp[FIX(i+1,j,k)])-Temp_opt)*Dx*Dy*Dz;
+          if(para->prob->plume_mod==1) 
+            b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model  
         }
 
-        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
-                        + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
+        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] 
+                        + an[FIX(i,j,k)] + as[FIX(i,j,k)] + af[FIX(i,j,k)] 
+                        + ab[FIX(i,j,k)];
       END_FOR
 
       set_bnd(para, var, var_type, psi, BINDEX);
       
       break;
-
+    // coefficients for velocity v
     case VY:  
       kapa = para->prob->nu; 
       
@@ -169,15 +173,15 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 
         if(para->prob->tur_model == CHEN)  {
           aw[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j+1,k)]
-                                      +vt[FIX(i-1,j,k)]+vt[FIX(i-1,j+1,k)]))*Dy*Dz/dxw;
+                          +vt[FIX(i-1,j,k)]+vt[FIX(i-1,j+1,k)]))*Dy*Dz/dxw;
           ae[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j+1,k)]
-                                      +vt[FIX(i+1,j,k)]+vt[FIX(i+1,j+1,k)]))*Dy*Dz/dxe;
+                          +vt[FIX(i+1,j,k)]+vt[FIX(i+1,j+1,k)]))*Dy*Dz/dxe;
           an[FIX(i,j,k)]= (kapa+vt[FIX(i,j+1,k)])*Dx*Dz/dyn;
           as[FIX(i,j,k)]= (kapa+vt[FIX(i,j,k)])*Dx*Dz/dys;
           af[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j+1,k)]
-                                      +vt[FIX(i,j,k+1)]+vt[FIX(i,j+1,k+1)]))*Dx*Dy/dzf;
+                          +vt[FIX(i,j,k+1)]+vt[FIX(i,j+1,k+1)]))*Dx*Dy/dzf;
           ab[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j+1,k)]
-                                      +vt[FIX(i,j,k-1)]+vt[FIX(i,j+1,k-1)]))*Dx*Dy/dzb;
+                          +vt[FIX(i,j,k-1)]+vt[FIX(i,j+1,k-1)]))*Dx*Dy/dzb;
         }
         else  {
           aw[FIX(i,j,k)]= kapa*Dy*Dz/dxw;
@@ -193,17 +197,20 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 
         if(para->prob->gravdir==GRAVY || para->prob->gravdir==GRAVYN ) {
 
-          b[FIX(i,j,k)] -= beta*gravy*(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i,j+1,k)])-Temp_opt)*Dx*Dy*Dz;
-          b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model 
+          b[FIX(i,j,k)] -= beta*gravy*(0.5f*(Temp[FIX(i,j,k)]
+                                   +Temp[FIX(i,j+1,k)])-Temp_opt)*Dx*Dy*Dz;
+          if(para->prob->plume_mod==1)
+            b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model 
         }
-        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
-                        + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
+        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] 
+                       + an[FIX(i,j,k)]  + as[FIX(i,j,k)] + af[FIX(i,j,k)] 
+                       + ab[FIX(i,j,k)];
       END_FOR
 
       set_bnd(para, var, var_type, psi, BINDEX);
 
     break;
-
+    // coefficients for velocity w
     case VZ: 
       kapa = para->prob->nu; 
 
@@ -221,13 +228,13 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
 
         if(para->prob->tur_model == CHEN) {
           aw[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j,k+1)]
-                                      +vt[FIX(i-1,j,k)]+vt[FIX(i-1,j,k+1)]))*Dy*Dz/dxw;
+                          +vt[FIX(i-1,j,k)]+vt[FIX(i-1,j,k+1)]))*Dy*Dz/dxw;
           ae[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j,k+1)]
-                                      +vt[FIX(i+1,j,k)]+vt[FIX(i+1,j,k+1)]))*Dy*Dz/dxe;
+                          +vt[FIX(i+1,j,k)]+vt[FIX(i+1,j,k+1)]))*Dy*Dz/dxe;
           an[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j,k+1)]
-                                      +vt[FIX(i,j+1,k)]+vt[FIX(i,j+1,k+1)]))*Dx*Dz/dyn;
+                          +vt[FIX(i,j+1,k)]+vt[FIX(i,j+1,k+1)]))*Dx*Dz/dyn;
           as[FIX(i,j,k)]= (kapa+0.25f*(vt[FIX(i,j,k)]+vt[FIX(i,j,k+1)]
-                                      +vt[FIX(i,j-1,k)]+vt[FIX(i,j-1,k+1)]))*Dx*Dz/dys;
+                          +vt[FIX(i,j-1,k)]+vt[FIX(i,j-1,k+1)]))*Dx*Dz/dys;
           af[FIX(i,j,k)]= (kapa+vt[FIX(i,j,k+1)])*Dx*Dy/dzf;
           ab[FIX(i,j,k)]= (kapa+vt[FIX(i,j,k)])*Dx*Dy/dzb;
         }
@@ -244,20 +251,23 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         b[FIX(i,j,k)]= psi0[FIX(i,j,k)]*ap0[FIX(i,j,k)];
         
         if(para->prob->gravdir==GRAVZ || para->prob->gravdir==GRAVZN ) {
-          b[FIX(i,j,k)] -= beta*gravz*(0.5f*(Temp[FIX(i,j,k)]+Temp[FIX(i,j,k+1)])-Temp_opt)*Dx*Dy*Dz;
-          b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model 
+          b[FIX(i,j,k)] -= beta*gravz*(0.5f*(Temp[FIX(i,j,k)]
+                                     +Temp[FIX(i,j,k+1)])-Temp_opt)*Dx*Dy*Dz;
+          if(para->prob->plume_mod==1)
+            b[FIX(i,j,k)] += s_plume[FIX(i,j,k)]/dt*Dx*Dy*Dz;//plume model 
         }
-        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
-                        + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
+        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] 
+                       + an[FIX(i,j,k)]  + as[FIX(i,j,k)] + af[FIX(i,j,k)]
+                       + ab[FIX(i,j,k)];
       END_FOR
         
       set_bnd(para, var, var_type, psi,BINDEX);
       
       break;
 
+    //Coefficients for temperature                           
     case TEMP: 
       kapa = para->prob->nu; 
-     
       FOR_EACH_CELL
         if(flagp[FIX(i,j,k)]>0) continue;
         dxe=x[FIX(i+1,j,k)]-x[FIX(i,j,k)];
@@ -271,12 +281,18 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
         Dz=gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)];
 
         if(para->prob->tur_model == CHEN)  {
-          aw[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]+vt[FIX(i-1,j,k)]))/Prt*Dy*Dz/dxw;
-          ae[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]+vt[FIX(i+1,j,k)]))/Prt*Dy*Dz/dxe;
-          an[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]+vt[FIX(i,j+1,k)]))/Prt*Dx*Dz/dyn;
-          as[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]+vt[FIX(i,j-1,k)]))/Prt*Dx*Dz/dys;
-          af[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]+vt[FIX(i,j,k+1)]))/Prt*Dx*Dy/dzf;
-          ab[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]+vt[FIX(i,j,k-1)]))/Prt*Dx*Dy/dzb;
+          aw[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i-1,j,k)]))/Prt*Dy*Dz/dxw;
+          ae[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i+1,j,k)]))/Prt*Dy*Dz/dxe;
+          an[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j+1,k)]))/Prt*Dx*Dz/dyn;
+          as[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j-1,k)]))/Prt*Dx*Dz/dys;
+          af[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j,k+1)]))/Prt*Dx*Dy/dzf;
+          ab[FIX(i,j,k)]= (kapa+0.5f*(vt[FIX(i,j,k)]
+                                     +vt[FIX(i,j,k-1)]))/Prt*Dx*Dy/dzb;
         }
         else {
           aw[FIX(i,j,k)]= kapa/Prt*Dy*Dz/dxw;
@@ -305,11 +321,13 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
       set_bnd(para, var, var_type, psi,BINDEX);
 
       FOR_EACH_CELL
-        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
-                  + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
+        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] 
+                       + an[FIX(i,j,k)]  + as[FIX(i,j,k)] + af[FIX(i,j,k)] 
+                       + ab[FIX(i,j,k)];
       END_FOR
-        
       break;
+
+    //Coefficients for species    
     case DEN:  
       kapa = para->prob->nu;
       FOR_EACH_CELL
@@ -336,8 +354,9 @@ void coef_diff(PARA_DATA *para, REAL **var, REAL *psi, REAL *psi0,
       set_bnd(para, var, var_type, psi,BINDEX);
 
       FOR_EACH_CELL
-        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)] + an[FIX(i,j,k)] 
-                  + as[FIX(i,j,k)] + af[FIX(i,j,k)] + ab[FIX(i,j,k)];
+        ap[FIX(i,j,k)] = ap0[FIX(i,j,k)] + ae[FIX(i,j,k)] + aw[FIX(i,j,k)]
+                       + an[FIX(i,j,k)]  + as[FIX(i,j,k)] + af[FIX(i,j,k)]
+                       + ab[FIX(i,j,k)];
       END_FOR
         
       break;

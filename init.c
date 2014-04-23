@@ -1,4 +1,22 @@
-
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   init.c
+///
+/// \brief  Subroutines for initializing the FFD
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2013
+///
+/// This file provides functions to initialize the parameters and variables in
+/// FFD. The default value for some problem parameters will be assigned.
+///
+///////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -8,9 +26,13 @@
 #include "parameters.h"
 
 
-/******************************************************************************
-| Initialize the Variables   
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Entrance of initializing the parameter
+///
+///\param para Pointer to FFD parameters
+///
+///\return 1 if no error occurs
+///////////////////////////////////////////////////////////////////////////////
 int initial(PARA_DATA *para) {
 
   default_value(para);
@@ -19,9 +41,13 @@ int initial(PARA_DATA *para) {
   return(1);
 } // End of initial( )
 
-/******************************************************************************
-| Set the Default Values for Variables   
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Specifying default value for problem parameters.
+///
+///\param para Pointer to FFD parameters
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void default_value(PARA_DATA *para){
   para->mytime->dt = 0.1f; 
   para->mytime->t_output = 1000;
@@ -44,11 +70,15 @@ void default_value(PARA_DATA *para){
 
   para->outp->Temp_ref   = 300.0;//35.5f;//10.25f;
 
-} // End of 
+} // End of default_value()
 
-/******************************************************************************
-   free simulation data
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Freeing the memeory allocated by the variables
+///
+///\param var Pointer to FFD variables
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void free_data(REAL **var) {
   if(var[X]) free(var[X]);
   if(var[Y]) free(var[Y]);
@@ -112,8 +142,16 @@ void free_data(REAL **var) {
   if(var[DIST]) free(var[DIST]);
   if(var[VT]) free(var[VT]);
   if(var[FLAGT]) free(var[FLAGT]);
-} /** free_data() **/
+} // End free_data()
 
+
+///////////////////////////////////////////////////////////////////////////////
+///\brief Freeing the memeory of boundary indices
+///
+///\param BINDEX Pointer to FFD bounary indices
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void free_index(int **BINDEX) {
   if(BINDEX[0]) free(BINDEX[0]);
   if(BINDEX[1]) free(BINDEX[1]);
@@ -138,9 +176,15 @@ void free_index(int **BINDEX) {
   if(BINDEX[20]) free(BINDEX[20]);
 }
 
-/******************************************************************************
-   clear simulation data
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Initializing value for FFD variables
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD variables
+///\param BINDEX Pointer to FFD boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void clear_data(PARA_DATA *para, REAL **var, int **BINDEX) {
   int i, size;
   size=(para->geom->imax+2) * (para->geom->jmax+2) * (para->geom->kmax+2);
@@ -207,5 +251,5 @@ void clear_data(PARA_DATA *para, REAL **var, int **BINDEX) {
     BINDEX[20][i]    =0.0;
   }
 
-} /** clear_data() **/ 
+} // End of clear_data()
 

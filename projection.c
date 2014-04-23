@@ -1,3 +1,24 @@
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   projection.c
+///
+/// \brief  Subroutines for performing pressure projection used in FFD
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2013
+///
+/// This file provides functions for performing pressure projection in FFD, which
+/// is realized in two steps,including solving the pressure equation and performing
+/// the velocity correction.
+///
+///////////////////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include "math.h"
 #include "data_structure.h"
@@ -8,9 +29,15 @@
 
 FILE *file1;
 
-/******************************************************************************
-| projection for velocity
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Project the velocity
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param BINDEX Pointer to boundary index
+///
+///\return No return needed
+///////////////////////////////////////////////////////////////////////////////
 void projection(PARA_DATA *para, REAL **var, int **BINDEX) {
   int i, j, k;
   int imax = para->geom->imax, jmax = para->geom->jmax;
@@ -24,16 +51,12 @@ void projection(PARA_DATA *para, REAL **var, int **BINDEX) {
   REAL *ae = var[AE], *aw =var[AW], *an = var[AN], *as = var[AS];
   REAL *pp = var[PP];
   REAL dxe,dxw, dyn,dys,dzf,dzb,Dx,Dy,Dz;
-  REAL b1,b2;
-  REAL a1,a2;
   REAL zv=para->geom->zv;
   REAL residual = 1.0;  
   REAL *flagp = var[FLAGP],*flagu = var[FLAGU],*flagv = var[FLAGV],*flagw = var[FLAGW];
 
 
-  /*---------------------------------------------------------------------------
-  | Coefficents
-  ---------------------------------------------------------------------------*/
+ // Specify the equation coefficients
   FOR_EACH_CELL
 
     dxe = x[FIX(i+1,j,k)]-x[FIX(i,j,k)];
@@ -73,7 +96,15 @@ void projection(PARA_DATA *para, REAL **var, int **BINDEX) {
 } // End of projecttion( )
 
 
-
+///////////////////////////////////////////////////////////////////////////////
+///\brief Correct the velocity based on pressure solution
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD simulation variables
+///\param BINDEX Pointer to boundary index
+///
+///\return No return needed
+///////////////////////////////////////////////////////////////////////////////
 void vel_correction(PARA_DATA *para, REAL **var,int **BINDEX) {
   int i, j, k;
   int imax = para->geom->imax, jmax = para->geom->jmax;
@@ -86,8 +117,6 @@ void vel_correction(PARA_DATA *para, REAL **var,int **BINDEX) {
   REAL *p = var[IP];
   REAL *flagp = var[FLAGP],*flagu = var[FLAGU];
   REAL *flagv = var[FLAGV],*flagw = var[FLAGW];
-  REAL b2,a2;
-  REAL Dx,Dy,Dz;
   REAL zv=para->geom->zv;
 
   set_bnd_pressure(para, var, p,BINDEX); 

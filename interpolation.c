@@ -1,12 +1,46 @@
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   interpolation.c
+///
+/// \brief  Subroutines for performing interpolation step for semi-Lagrangian
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2013
+///
+/// This file provides functions for performing interpolations for
+/// semi-Lagrangian scheme.linear interpolation scheme \c interpolaiton_bilinear()
+/// will be used in FFD, but if a heat source cell boudnary condition was assigned
+/// in FFD,the upwind scheme will be used for this cell when plume model is not 
+/// applied for the heat source cell.
+///
+///////////////////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include "data_structure.h"
 #include "interpolation.h"
 #include "utility.h"
 
 
-/******************************************************************************
-| Interpolation
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Entrance of interpolation
+///
+///\param para Pointer to FFD parameters
+///\param d0 Pointer to the variable for interpolation
+///\param x_1 Reciprocal of X-length
+///\param y_1 Reciprocal of Y-length
+///\param z_1 Reciprocal of Z-length
+///\param p I-index of the control volume
+///\param q J-index of the control volume
+///\param r K-index of the control volume
+///
+///\return Interpolated value
+///////////////////////////////////////////////////////////////////////////////
 REAL interpolation(PARA_DATA *para, REAL *d0, REAL x_1, REAL y_1, REAL z_1,
                    int p, int q, int r) {
   int imax = para->geom->imax, jmax = para->geom->jmax;
@@ -20,18 +54,29 @@ REAL interpolation(PARA_DATA *para, REAL *d0, REAL x_1, REAL y_1, REAL z_1,
 } // End of interpolation()
 
 
-/******************************************************************************
-| Bilinear Interpolation
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+///\brief Bilinear interpolation
+///
+///\param x_1 Reciprocal of X-length
+///\param y_1 Reciprocal of Y-length
+///\param z_1 Reciprocal of Z-length
+///\param d000 parameter for interpolation
+///\param d010 parameter for interpolation
+///\param d100 parameter for interpolation
+///\param d110 parameter for interpolation
+///\param d001 parameter for interpolation
+///\param d011 parameter for interpolation
+///\param d101 parameter for interpolation
+///\param d111 parameter for interpolation
+//
+///\return Interpolated value
+///////////////////////////////////////////////////////////////////////////////
 REAL interpolation_bilinear(REAL x_1, REAL y_1, REAL z_1,
                             REAL d000, REAL d010, REAL d100, REAL d110,
                             REAL d001, REAL d011, REAL d101, REAL d111){
   REAL x_0, y_0, z_0;
   REAL tmp0, tmp1;
 
-  /*-------------------------------------------------------------------------
-  | Interpolating for all variables
-  -------------------------------------------------------------------------*/
   x_0 = 1.0f - x_1;
   y_0 = 1.0f - y_1; 
   z_0 = 1.0f - z_1;
@@ -45,13 +90,24 @@ REAL interpolation_bilinear(REAL x_1, REAL y_1, REAL z_1,
 } // End of interpolation_bilinear()
 
 
+
+///////////////////////////////////////////////////////////////////////////////
+///\brief Bilinear interpolation for surface value
+///
+///\param x_1 Reciprocal of X-length
+///\param y_1 Reciprocal of Y-length
+///\param d000 parameter for interpolation
+///\param d010 parameter for interpolation
+///\param d100 parameter for interpolation
+///\param d110 parameter for interpolation
+///
+///\return Interpolated value
+///////////////////////////////////////////////////////////////////////////////
 REAL interpolation_linear(REAL x_1, REAL y_1, REAL d000, 
                           REAL d010, REAL d100, REAL d110){
   REAL x_0, y_0;
   REAL tmp0;
-  /*-------------------------------------------------------------------------
-  | Interpolating for all variables
-  -------------------------------------------------------------------------*/
+
   x_0 = 1.0f - x_1; 
   y_0 = 1.0f - y_1;
   
@@ -62,6 +118,19 @@ REAL interpolation_linear(REAL x_1, REAL y_1, REAL d000,
 } // End of interpolation_bilinear()
 
 
+///////////////////////////////////////////////////////////////////////////////
+///\brief Upwind advection scheme of heat source cells
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD variables
+///\param d0 Pointer to the variable for interpolation
+///\param i I-index of the control volume
+///\param j J-index of the control volume
+///\param k K-index of the control volume
+///\param d110 parameter for interpolation
+///
+///\return advection value
+///////////////////////////////////////////////////////////////////////////////
 REAL advection_upwind(PARA_DATA *para, REAL **var,REAL *d0,int i, int j, int k) { 
   int imax = para->geom->imax, jmax = para->geom->jmax;
   int kmax = para->geom->kmax;
@@ -85,7 +154,6 @@ REAL advection_upwind(PARA_DATA *para, REAL **var,REAL *d0,int i, int j, int k) 
   Fb=Dy*Dx*w[FIX(i,j,k-1)];
 
   
-
   d=d0[FIX(i,j,k)]-dt/(Dx*Dy*Dz)*( max(Fe,0)*d0[FIX(i,j,k)]-max(Fw,0)*d0[FIX(i-1,j,k)]
                                + max(Fn,0)*d0[FIX(i,j,k)]-max(Fs,0)*d0[FIX(i,j-1,k)]
                  + max(Ff,0)*d0[FIX(i,j,k)]-max(Fb,0)*d0[FIX(i,j,k-1)]
@@ -95,10 +163,28 @@ REAL advection_upwind(PARA_DATA *para, REAL **var,REAL *d0,int i, int j, int k) 
 
   return d;
 
-}
+} //End of advection_upwind()
 
 
- 
+///////////////////////////////////////////////////////////////////////////////
+///\brief Modifying the interpolation coefficients of boundary cells
+///
+/// For near boundary cells, it's possible that the interpolation would
+/// interoplate from boundary cells, which will generate unphysical 
+/// results. So it is necessary to adjust the coefficients of boundary cells.
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD variables
+///\param coef Pointer to interpolation coefficients of surounding cells
+///\param x1 Reciprocal of X-length
+///\param y1 Reciprocal of Y-length
+///\param z1 Reciprocal of Z-length
+///\param p I-index of the control volume
+///\param q J-index of the control volume
+///\param r K-index of the control volume
+///
+///\return advection value
+/////////////////////////////////////////////////////////////////////////////// 
 void interpolation_coef(PARA_DATA *para,REAL **var, REAL *coef,REAL x1, REAL y1, REAL z1,int p, int q, int r){
 
   int imax = para->geom->imax, jmax = para->geom->jmax;
@@ -114,9 +200,6 @@ void interpolation_coef(PARA_DATA *para,REAL **var, REAL *coef,REAL x1, REAL y1,
   REAL *flagt=var[FLAGT];
   REAL eta;
   REAL total;
-  int sum_cell;
-
-
 
   x0 = 1.0f - x1;
   y0 = 1.0f - y1; 
@@ -131,20 +214,6 @@ void interpolation_coef(PARA_DATA *para,REAL **var, REAL *coef,REAL x1, REAL y1,
   coef[PIX(0,1,1)]=x0*y1*z1;
   coef[PIX(1,0,1)]=x1*y0*z1;
   coef[PIX(1,1,1)]=x1*y1*z1;
-
-  //if(flagu[FIX(p,q,r)]==4 || flagv[FIX(p,q,r)]==4 || flagw[FIX(p,q,r)]==4)         cell[PIX(0,0,0)]=1;
-  //if(flagu[FIX(p,q+1,r)]==4 || flagv[FIX(p,q,r)]==4 || flagw[FIX(p,q+1,r)]==4)     cell[PIX(0,1,0)]=1;
-  //if(flagu[FIX(p,q,r)]==4 || flagv[FIX(p+1,q,r)]==4 || flagw[FIX(p+1,q,r)]==4)     cell[PIX(1,0,0)]=1;
-  //if(flagu[FIX(p,q+1,r)]==4 || flagv[FIX(p+1,q,r)]==4 || flagw[FIX(p+1,q+1,r)]==4) cell[PIX(1,1,0)]=1;
-
-  //if(flagu[FIX(p,q,r+1)]==4 || flagv[FIX(p,q,r+1)]==4 || flagw[FIX(p,q,r)]==4)         cell[PIX(0,0,1)]=1;
-  //if(flagu[FIX(p,q+1,r+1)]==4 || flagv[FIX(p,q,r+1)]==4 || flagw[FIX(p,q+1,r)]==4)     cell[PIX(0,1,1)]=1;
-  //if(flagu[FIX(p,q,r+1)]==4 || flagv[FIX(p+1,q,r+1)]==4 || flagw[FIX(p+1,q,r)]==4)     cell[PIX(1,0,1)]=1;
-  //if(flagu[FIX(p,q+1,r+1)]==4 || flagv[FIX(p+1,q,r+1)]==4 || flagw[FIX(p+1,q+1,r)]==4) cell[PIX(1,1,1)]=1;
-
-  //sum_cell=cell[PIX(0,0,0)]+cell[PIX(1,0,0)]+cell[PIX(0,1,0)]+cell[PIX(1,1,0)]
-  //         +cell[PIX(0,0,1)]+cell[PIX(1,0,1)]+cell[PIX(0,1,1)]+cell[PIX(1,1,1)];
-  //if(sum_cell==8) printf("pqr sumcell=8: %d\n%d\t%d\n",p,q,r);
 
  
   for(i=0;i<=1;i++)
@@ -162,14 +231,30 @@ void interpolation_coef(PARA_DATA *para,REAL **var, REAL *coef,REAL x1, REAL y1,
               }
         }
       }
-      
-      
-       
-       
-      
-} // End of interpolation_bilinear()
+ } // End of interpolation_bilinear()
 
- REAL interpolation_temp(PARA_DATA *para, REAL **var,REAL *d0, REAL x_1, REAL y_1, REAL z_1,
+
+
+///////////////////////////////////////////////////////////////////////////////
+///\brief Preforming interpolation for temperature and specices.
+///
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD variables
+///\param d0 Pointer to interpolation variable
+///\param x_1 Reciprocal of X-length
+///\param y_1 Reciprocal of Y-length
+///\param z_1 Reciprocal of Z-length
+///\param i0 I-index of the arriving point
+///\param j0 J-index of the arriving point
+///\param k0 K-index of the carriving point
+///\param p I-index of the control volume
+///\param q J-index of the control volume
+///\param r K-index of the control volume
+///
+///\return advection value
+/////////////////////////////////////////////////////////////////////////////// 
+REAL interpolation_temp(PARA_DATA *para, REAL **var,REAL *d0, REAL x_1, REAL y_1, REAL z_1,
                    int i0, int j0, int k0, int p, int q, int r) {
   int imax = para->geom->imax, jmax = para->geom->jmax;
   int kmax = para->geom->kmax;
@@ -207,7 +292,7 @@ void interpolation_coef(PARA_DATA *para,REAL **var, REAL *coef,REAL x1, REAL y1,
   if(lz<=(gz[FIX(p,q,r)]-z[FIX(p,q,r)])) kk=1;
   else kk=0;
   
-  //printf("p,q,r=%d\t%d\t%d\n",p,q,r);
+  //Special treatment for cells around a partition wall
   if(flagu[FIX(p,q+1-jj,r+1-kk)]==4)     d[PIX(ii,1-jj,1-kk)]=d0[FIX(p+1-ii,q+1-jj,r+1-kk)];
   if(flagv[FIX(p+1-ii,q,r+1-kk)]==4)     d[PIX(1-ii,jj,1-kk)]=d0[FIX(p+1-ii,q+1-jj,r+1-kk)];
   if(flagu[FIX(p,q+jj,r+1-kk)]==4)       d[PIX(ii,jj,1-kk)]=d0[FIX(p+1-ii,q+jj,r+1-kk)];
@@ -228,14 +313,11 @@ void interpolation_coef(PARA_DATA *para,REAL **var, REAL *coef,REAL x1, REAL y1,
         interp_value += coef[PIX(i,j,k)]*d[PIX(i,j,k)];
         tcoef +=coef[PIX(i,j,k)];
       }
-  //if(x_1==0 && y_1==1&& p==11 && q==8 && r== 9) printf("interp_value=%f\t%f\n",coef[PIX(0,0,0)],d0[FIX(p,q,r)]);   
-    //  printf("interp_value=%f\n",interp_value);
 
    var[LOCMIN][FIX(i0,j0,k0)]=check_min_pix(para, d); 
    var[LOCMAX][FIX(i0,j0,k0)]=check_max_pix(para, d);
 
-
   return interp_value;
 
-} // End of interpolation()
+} // End of interpolation_temp()
 

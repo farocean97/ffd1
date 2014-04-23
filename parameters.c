@@ -1,15 +1,39 @@
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   parameters.c
+///
+/// \brief  Defining the default value for some parameters used in FFD
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2013
+///
+/// This file provides functions for seting default values for some parameters
+/// used in FFD.
+///
+///////////////////////////////////////////////////////////////////////////////
+
 #include "data_structure.h"
 
-/******************************************************************************
-|  Input Parameters
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Assign the FFD parameters
+///
+///\param para Pointer to FFD parameters
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
 void input_para(PARA_DATA *para) {
   
   para->geom->uniform = 0; //1: uniform; 0: non-uniform 
   para->mytime->dt = 0.1f; 
   para->mytime->t_steady = 100.0f;
   para->mytime->t_output =1000 ;
-  para->prob->nu    = 1.79e-5f; //1.53e-5f;//1.53e-5f;
+  para->prob->nu    = 1.79e-5f; 
   para->prob->tur_model = LAM; //LAM, CHEN, 
   para->prob->coeff_h=0.004;//0.004
   para->prob->chen_a = 0.03874f; //0.03874f;  /* the coeffcient of Chen's model*/

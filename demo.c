@@ -1,6 +1,26 @@
-/*======================================================================
- demo.c
-=======================================================================*/
+///////////////////////////////////////////////////////////////////////////////
+///
+/// \file   demo.c
+///
+/// \brief  main function of FFD
+///
+/// \author Mingang Jin, Qingyan Chen
+///         Purdue University
+///         Jin56@purdue.edu, YanChen@purdue.edu
+///         Wangda Zuo
+///         University of Miami
+///         W.Zuo@miami.edu
+///
+/// \date   04/02/2014
+///
+/// This file provides main function of FFD, the definination of global
+/// variable and the memory allocation for the pointer to the FFD variable,
+/// \c allocate_data().For the main function,the first step is to read the
+/// input data from SCI, initialing the data. Then FFD identifies the boundary
+/// and fluid cells in the domain. After that, FFD calls the solver to perform
+/// simulation. At last, FFD writes the data.
+///
+///////////////////////////////////////////////////////////////////////////////
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -15,7 +35,6 @@
 #include "timing.h"
 #include "input.h"
 
-/* global variables */
 static REAL dt, diff, visc;
 static REAL force, source;
 static int screen;
@@ -54,12 +73,20 @@ static PARA_DATA para;
 
 clock_t start, end;
 
-/******************************************************************************
-| allocate data
-******************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+/// \brief Memeory allocation for the pointer to the FFD variables
+///
+/// FFD will use two two-dimensional pointer to represent varaibles in FFD,
+/// One is for the variables in the domain, and the other one is for storing 
+/// the boundary informtion. 
+///
+///\param void no parameter needed
+///
+///\return int 1 means successfully allocating memeory
+///////////////////////////////////////////////////////////////////////////////
 int allocate_data ( void ){
   int size = (geom.imax+2) * (geom.jmax+2) * (geom.kmax+2);
-  printf( "size=%d\n", size); 
+  //printf( "size=%d\n", size); 
   x          = (REAL *) malloc ( size*sizeof(REAL) );
   y          = (REAL *) malloc ( size*sizeof(REAL) );
   z          = (REAL *) malloc ( size*sizeof(REAL) );
@@ -245,11 +272,11 @@ int allocate_data ( void ){
     return ( 0 );
   }
   return ( 1 );
-} /** allocate_data() **/
+} // End of allocate()
 
 
 ///////////////////////////////////////////////////////////////////////////////
-///Main program
+///\brief Main program
 ///
 /// Initialize the simualtion and read input data from SCI,run the simulations, 
 /// and write the results
@@ -257,7 +284,6 @@ int allocate_data ( void ){
 ///
 ///\return void No return needed
 ///////////////////////////////////////////////////////////////////////////////
-
 int main() { 
   para.geom = &geom;
   para.outp = &outp1;
@@ -272,8 +298,6 @@ int main() {
     printf("no file"); exit(1);
   }
 
-  //printf("imax= %d\t jmax= %d\t  kmax= %d\n ", para.geom->imax,para.geom->jmax,para.geom->kmax);
-
   if(!allocate_data( ))    exit ( 1 );
 
   clear_data(&para,  var,BINDEX);
@@ -281,8 +305,6 @@ int main() {
   if(!read_input(&para, var,BINDEX)) {
     printf("no file"); exit(1);
   }
-
- // if(!read_zeroone(&para, var,BINDEX)) {printf("no file"); exit(1);}
 
   mark_cell(&para, var,BINDEX);
 
