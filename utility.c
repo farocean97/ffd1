@@ -31,14 +31,15 @@
 ///
 ///\param para Pointer to FFD parameters
 ///\param var Pointer to FFD simulation variables
+///\param var_type The type of variable for advection solver
 ///\param psi0 Pointer to the computed variables before advection
 ///\param psi Pointer to the computed variables after advection
 ///\param BINDEX Pointer to boundary index
 ///
 ///\return void No return needed
 ///////////////////////////////////////////////////////////////////////////////
-void psi_conservation(PARA_DATA *para, REAL **var, REAL *psi,
-                      REAL *psi0,int **BINDEX) {
+void psi_conservation(PARA_DATA *para, REAL **var, int var_type,
+                                REAL *psi,REAL *psi0,int **BINDEX) {
   int i,j,k;
   int imax = para->geom->imax, jmax = para->geom->jmax, kmax=para->geom->kmax;
   REAL *u = var[VX], *v = var[VY];
@@ -56,61 +57,125 @@ void psi_conservation(PARA_DATA *para, REAL **var, REAL *psi,
   REAL rho=para->prob->rho;
   REAL cp=para->prob->spec;
 
-  mass0=0;
-  FOR_EACH_CELL
-    if(flagp[FIX(i,j,k)]<=0) {
-      var[LOCMIN][FIX(i,j,k)]=check_min(para, psi0, BINDEX[4][FIX(i,j,k)], 
+    mass0=0;
+    FOR_EACH_CELL
+      if(flagp[FIX(i,j,k)]<=0) {
+        var[LOCMIN][FIX(i,j,k)]=check_min(para, psi0, BINDEX[4][FIX(i,j,k)],
                               BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
-      var[LOCMAX][FIX(i,j,k)]=check_max(para, psi0, BINDEX[4][FIX(i,j,k)], 
+        var[LOCMAX][FIX(i,j,k)]=check_max(para, psi0, BINDEX[4][FIX(i,j,k)], 
                               BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
+      }
+    END_FOR
+
+    qin= inflow(para,var,psi0,BINDEX);
+    qout=outflow(para,var,psi0,BINDEX);
+    mass0 +=(qin+qout)*dt;
+
+    FOR_EACH_CELL
+      if(flagp[FIX(i,j,k)]>0) continue;
+      dA= (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                           *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
+
+      //if(var_type==TEMP && BINDEX[20][FIX(i,j,k)]==1 && para->prob->plume_mod==1) {
+      //  mass0 += rho*cp*var[TMP2][FIX(i,j,k)]*dA;
+      //}
+      //else mass0 += rho*cp*psi0[FIX(i,j,k)]*dA;
+      mass0 += rho*cp*psi0[FIX(i,j,k)]*dA;
+      mass  += rho*cp*psi[FIX(i,j,k)]*dA;
+      dens +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)]);
+      dens1 +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)]);   
+    END_FOR
+
+    eta=mass0-mass;
+    //if(var_type==DEN) printf("eta=%f\t%f\t%f\n", eta, qin, qout);
+    if(eta<0) {   // mass generation occured
+      FOR_EACH_CELL
+        if(flagp[FIX(i,j,k)]>0 ) continue;
+        dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
+                          *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                      *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                      *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+        psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
+                          *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                      *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                      *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+      END_FOR
     }
-  END_FOR
+    else {
+      FOR_EACH_CELL
+        if(flagp[FIX(i,j,k)]>0 ) continue;
+          dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
+                          *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                      *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                      *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+          //if(var_type==DEN) printf("dens_s=%f\t", dens_s[FIX(i,j,k)]); 
+          psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
+                          *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+                                      *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+                                      *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+      END_FOR
+    }
 
-  qin= inflow(para,var,psi0,BINDEX);
-  qout=outflow(para,var,psi0,BINDEX);
-  mass0 +=(qin+qout)*dt;
+  //else {
+  //  mass0=0;
 
-  FOR_EACH_CELL
-    if(flagp[FIX(i,j,k)]>0) continue;
-    dA= (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-        *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
-    area += dA;
-    if(BINDEX[20][FIX(i,j,k)]==1) mass0 += rho*cp*var[TMP2][FIX(i,j,k)]*dA;
-    else mass0 += rho*cp*psi0[FIX(i,j,k)]*dA;
-    mass  += rho*cp*psi[FIX(i,j,k)]*dA;
-    dens +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)]);
-    dens1 +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)]);   
-  END_FOR
+  //  FOR_EACH_CELL
+  //    if(flagp[FIX(i,j,k)]<=0)  {
+  //    var[LOCMIN][FIX(i,j,k)]=check_min(para, psi0, BINDEX[4][FIX(i,j,k)],
+  //                          BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
+  //    var[LOCMAX][FIX(i,j,k)]=check_max(para, psi0, BINDEX[4][FIX(i,j,k)],
+  //                          BINDEX[5][FIX(i,j,k)],  BINDEX[6][FIX(i,j,k)]); 
+  //    }
+  //  END_FOR
 
-  eta=mass0-mass;
-  if(eta<0) {   // mass generation occured
-    FOR_EACH_CELL
-      if(flagp[FIX(i,j,k)]>0 ) continue;
-      dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
-                     *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                 *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                 *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-      psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
-                     *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                 *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                 *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-    END_FOR
-  }
-  else {
-    FOR_EACH_CELL
-      if(flagp[FIX(i,j,k)]>0 ) continue;
-        dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
-                     *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                 *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                 *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-        psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
-                    *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
-                                *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
-                                *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
-    END_FOR
-  }
+  //  qin= inflow(para,var,psi0,BINDEX);
+  //  qout=outflow(para,var,psi0,BINDEX);
+  //  mass0 +=(qin+qout)*dt;
 
-} // End of psi_conservation()
+  //  FOR_EACH_CELL
+  //    if(flagp[FIX(i,j,k)]>0) continue;
+  //    dA= (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+  //                                         *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
+  //    area += dA;
+  //    mass0 += rho*cp*psi0[FIX(i,j,k)]*dA;
+  //    mass  += rho*cp*psi[FIX(i,j,k)]*dA;
+  //    dens +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)]);
+  //    dens1 +=  (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)]);   
+  //  END_FOR
+
+  //  massstar =mass0;
+  //  eta=mass0-mass;
+  //  //printf("eta=%f\n",eta);
+  //  if(eta<0) {   // mass generation occured
+  //    FOR_EACH_CELL
+  //      if(flagp[FIX(i,j,k)]>0) continue;
+  //      dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
+  //                      *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+  //                                  *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+  //                                  *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+  //      psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMIN][FIX(i,j,k)])/dens
+  //                      *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+  //                                  *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+  //                                  *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+  //    END_FOR
+  //  }
+  //  else {
+  //    FOR_EACH_CELL
+  //      if(flagp[FIX(i,j,k)]>0) continue;
+  //        dens_s[FIX(i,j,k)]=(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
+  //                      *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+  //                                  *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+  //                                  *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+  //        psi[FIX(i,j,k)] += (float) fabs(psi[FIX(i,j,k)]-var[LOCMAX][FIX(i,j,k)])/dens1
+  //                      *eta/(rho*cp*(gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])
+  //                                  *(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)])
+  //                                  *(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]));
+  //    END_FOR
+  //  }
+  //} 
+
+} // End of mass_conservation()
+
 
 
 
@@ -224,15 +289,15 @@ REAL inflow(PARA_DATA *para, REAL **var, REAL *psi, int **BINDEX){
     if(SI==EI){
       for(j=SJ ;j<EJ ;j++)
         for(k=SK ;k<EK ;k++){
-          mass_in +=rho*cp*para->bc->t_bc[zone_num]*flagp[FIX(SI,j+1,k+1)]*u[FIX(SI,j+1,k+1)]
-                  *(gy[FIX(SI,j+1,k+1)]-gy[FIX(SI,j,k+1)])* (gz[FIX(SI,j+1,k+1)]-gz[FIX(SI,j+1,k)]);
+          mass_in +=rho*cp*psi[FIX(SI,j+1,k+1)]*flagp[FIX(SI,j+1,k+1)]*u[FIX(SI,j+1,k+1)]
+                  *(gy[FIX(SI,j+1,k+1)]-gy[FIX(SI,j,k+1)])* (gz[FIX(SI,j+1,k+1)]-gz[FIX(SI,j+1,k)]); //para->bc->t_bc[zone_num]
         }
     }
 
     if(SJ==EJ){
       for(i=SI ;i<EI ;i++)
         for(k=SK ;k<EK ;k++){
-          mass_in +=rho*cp*para->bc->t_bc[zone_num]* flagp[FIX(i+1,SJ,k+1)]*v[FIX(i+1,SJ,k+1)]
+          mass_in +=rho*cp*psi[FIX(i+1,SJ,k+1)]* flagp[FIX(i+1,SJ,k+1)]*v[FIX(i+1,SJ,k+1)]
                   *(gx[FIX(i+1,SJ,k+1)]-gx[FIX(i,SJ,k+1)])* (gz[FIX(i+1,SJ,k+1)]-gz[FIX(i+1,SJ,k)]);
         }
     }
@@ -240,7 +305,7 @@ REAL inflow(PARA_DATA *para, REAL **var, REAL *psi, int **BINDEX){
     if(SK==EK){
       for(i=SI ;i<EI ;i++)
         for(j=SJ ;j<EJ ;j++){
-           mass_in += rho*cp*para->bc->t_bc[zone_num]*flagp[FIX(i+1,j+1,SK)]*w[FIX(i+1,j+1,SK)]
+           mass_in += rho*cp*psi[FIX(i+1,j+1,SK)]*flagp[FIX(i+1,j+1,SK)]*w[FIX(i+1,j+1,SK)]
                      *(gx[FIX(i+1,j+1,SK)]-gx[FIX(i,j+1,SK)])* (gy[FIX(i+1,j+1,SK)]-gy[FIX(i+1,j,SK)]);
         }
     }

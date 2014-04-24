@@ -482,57 +482,28 @@ void XLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *x, REAL u0,
   REAL dt=para->mytime->dt;
   REAL *flagu=var[FLAGU];
 
-  //if U=0 stop traceback
   if(OL[X]==x[FIX(OC[X],OC[Y],OC[Z])]){
     COOD[X]=0;
   }
-  //if U>0,start searching cells on the left
   else if(OL[X]<x[FIX(OC[X],OC[Y],OC[Z])])
   {
-    //if the cell index is larger than zero, keep searching.
     if(OC[X]>0) OC[X] -=1;
-
-    //if the cell coordiate is smaller than that of departure point, 
-    //stop searching and set COOD[X]=0
     if(OL[X]>=x[FIX(OC[X],OC[Y],OC[Z])]) COOD[X]=0;
-
-    //if the cell flag shows the cell is solid(flag>0) or pass 
-    //through wall partiions(flagu==4), stop searching in x direciton
-    //set COOD=0,and assign LOC=0 
-    //reset the cell index to the one next to the bounary cell so that trace
-    //back in other directions can still continue.
     if(flag[FIX(OC[X],OC[Y],OC[Z])]>0 || flagu[FIX(OC[X],OC[Y],OC[Z])]==4){
-
-      LOC[X]=0;
-      COOD[X]=0;
-      OC[X] +=1;
-
-      //if the cell flag shows inlet and the traceback crosses the inlet cell,
-      //reset the departure coordinate to that of the inlet cell 
       if(flagu[FIX(OC[X],OC[Y],OC[Z])]==0){
-        if(OL[X]<x[FIX(OC[X],OC[Y],OC[Z])]) OL[X]=x[FIX(OC[X],OC[Y],OC[Z])];
+       if(OL[X]<x[FIX(OC[X],OC[Y],OC[Z])]) OL[X]=x[FIX(OC[X],OC[Y],OC[Z])];
       }
-
-      //if the cell is not inlet, reset the departure coordinate to the one next
-      //to the inlet cell
       else {
         OL[X]=x[FIX(OC[X]+1,OC[Y],OC[Z])];
       }
+      LOC[X]=0;
+      COOD[X]=0;
+      OC[X] +=1;
     }
   }
-
-  //if the U<0, then search to the right direction.
   else {
-    //if the cell index smaller than imax, keep searching.
     if(OC[X]<=imax) OC[X] +=1;
-    //if the cell coordinate is larger than departure coordinate, stop searching.
     if(OL[X] <=x[FIX(OC[X],OC[Y],OC[Z])]) COOD[X]=0;
-
-    //if the cell flag shows the cell is solid(flag>0) or pass 
-    //through wall partiions(flagu==4), stop searching in x direciton
-    //set COOD=0,and assign LOC=0 
-    //reset the cell index to the one next to the bounary cell so that trace
-    //back in other directions can still continue.
     if(flag[FIX(OC[X],OC[Y],OC[Z])]>0 || flagu[FIX(OC[X]-1,OC[Y],OC[Z])]==4){
       if(flagu[FIX(OC[X]-1,OC[Y],OC[Z])]==0){
         if(OL[X]>x[FIX(OC[X],OC[Y],OC[Z])]) OL[X]=x[FIX(OC[X],OC[Y],OC[Z])];
@@ -544,7 +515,7 @@ void XLOCATION(PARA_DATA *para, REAL **var, REAL *flag, REAL *x, REAL u0,
       COOD[X]=0;
       OC[X] -=1;
     }
-  }         
+  }          
 } // End of XLOCATION()
 
 
@@ -892,5 +863,5 @@ void ZLOCATION_W(PARA_DATA *para, REAL **var, REAL *flag, REAL *z, REAL w0,
       OC[Z] -=1;
     }
   }
-}
+}// End of ZLOCATION_W()
  

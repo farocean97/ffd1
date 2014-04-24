@@ -67,8 +67,7 @@ void default_value(PARA_DATA *para){
   para->solv->check_residual = 0; /* donot check residual */
   para->solv->solver = GS;        /* Gauss-Seidel Solver */
 
-  para->outp->Temp_ref   = 300.0;//35.5f;//10.25f;
-
+ 
 } // End of default_value()
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -190,42 +189,12 @@ void clear_data(PARA_DATA *para, REAL **var, int **BINDEX) {
   
   para->mytime->t = 0.0;
   para->mytime->t_step = 0;
+  para->outp->cal_mean = 0;
 
   for(i=0; i<size; i++)  {
     var[GX][i]     = 0.0;
     var[GY][i]     = 0.0;
     var[GZ][i]     = 0.0;
-    var[VX][i]     = 0.0;
-    var[VY][i]     = 0.0;
-    var[VZ][i]     = 0.0;
-    var[VXM][i]    = 0.0;
-    var[VYM][i]    = 0.0;
-    var[VZM][i]    = 0.0;
-    var[VXC][i]    = 0.0;
-    var[VYC][i]    = 0.0;
-    var[VZC][i]    = 0.0;
-    var[VXS][i]    = 0.0;
-    var[VYS][i]    = 0.0;
-    var[VZS][i]    = 0.0;
-    var[DEN][i]    = 0.0;    
-    var[DENS][i]   = 0.0;
-    var[TEMP][i]   = 293.0;
-    var[TEMPM][i]  = 0.0;
-    var[TEMPS][i]  = 0.0;
-    var[IP][i]     = 0.0;
-    var[AP][i]     = 0.0;
-    var[AW][i]     = 0.0;
-    var[AE][i]     = 0.0;
-    var[AS][i]     = 0.0;
-    var[AN][i]     = 0.0;
-    var[AB][i]     = 0.0;
-    var[AF][i]     = 0.0;
-    var[B][i]      = 0.0;
-    var[AP0][i]    = 0.0;
-    var[TMP1][i]   = 0.0;
-    var[TMP2][i]   = 0.0;
-    var[TMP3][i]   = 0.0;
-    var[PP][i]     = 0.0;
     var[FLAGP][i]    = -1.0;
     var[FLAGU][i]    = -1.0;
     var[FLAGV][i]    = -1.0;
@@ -250,4 +219,53 @@ void clear_data(PARA_DATA *para, REAL **var, int **BINDEX) {
   }
 
 } // End of clear_data()
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+///\brief Initializing the simulation
+///
+///\param para Pointer to FFD parameters
+///\param var Pointer to FFD variables
+///\param BINDEX Pointer to FFD boundary index
+///
+///\return void No return needed
+///////////////////////////////////////////////////////////////////////////////
+void init_data(PARA_DATA *para, REAL **var, int **BINDEX) {
+  int i, size;
+  size=(para->geom->imax+2) * (para->geom->jmax+2) * (para->geom->kmax+2);
+  for(i=0; i<size; i++)  {
+    var[VX][i]     = 0.0;
+    var[VY][i]     = 0.0;
+    var[VZ][i]     = 0.0;
+    var[VXM][i]    = 0.0;
+    var[VYM][i]    = 0.0;
+    var[VZM][i]    = 0.0;
+    var[VXC][i]    = 0.0;
+    var[VYC][i]    = 0.0;
+    var[VZC][i]    = 0.0;
+    var[VXS][i]    = 0.0;
+    var[VYS][i]    = 0.0;
+    var[VZS][i]    = 0.0;
+    var[DEN][i]    = 0.0;    
+    var[DENS][i]   = 0.0;
+    var[TEMP][i]   = para->prob->Temp_i;
+    var[TEMPM][i]  = 0.0;
+    var[TEMPS][i]  = 0.0;
+    var[IP][i]     = 0.0;
+    var[AP][i]     = 0.0;
+    var[AW][i]     = 0.0;
+    var[AE][i]     = 0.0;
+    var[AS][i]     = 0.0;
+    var[AN][i]     = 0.0;
+    var[AB][i]     = 0.0;
+    var[AF][i]     = 0.0;
+    var[B][i]      = 0.0;
+    var[AP0][i]    = 0.0;
+    var[TMP1][i]   = 0.0;
+    var[TMP2][i]   = 0.0;
+    var[TMP3][i]   = 0.0;
+    var[PP][i]     = 0.0;
+  }
+}//End of init_data()
 

@@ -155,7 +155,6 @@ typedef struct
 typedef struct{
   int   cal_mean;    ///< 1: calculate mean value                              
   REAL  v_ref;       ///< reference velocity                                   
-  REAL  Temp_ref;    ///< reference temperature                                
   int   plot_grid;   ///< number of plotting grids                               
   REAL  v_length;    ///< the ratio factor of the velocity length              
   int   i_N;         ///< the number of grids plotted in x direction           
@@ -183,18 +182,19 @@ typedef struct{
   REAL  cond;     ///<  conductivity 
   REAL  trefmax;  ///< reference temperature 
   REAL  spec;     ///< specific heat 
-  int   readfile; ///< Read old data file as initial value(1:yes, 0:no)       */
-  int   moive;    ///< output data for make animation file(1:yes, 0:no)       */
-  int   output;   ///< 0: have not been written; 1: done                      */ 
-  int   plume_mod; ///< 0: not use; 1: use                                    */ 
+  int   readfile; ///< Read old data file as initial value(1:yes, 0:no)       
+  int   moive;    ///< output data for make animation file(1:yes, 0:no)       
+  int   output;   ///< 0: have not been written; 1: done                      
+  int   plume_mod; ///< 0: not use; 1: use                                    
   int   Tsolve;   ///< activate temperature solver: 1:solve
   int   Toutput;  ///< activate temperature output;
   int   Csolve;  ///< activate specices solver: 1:solve
   int   Coutput; ///< activate specices output: 1:solve
-  TUR_MODEL tur_model; ///< LAM, CHEN, 100NU                                   */ 
-  REAL  chen_a;   ///< coefficeint of Chen's zero euqation turbulence model   */
-  REAL  Prt;      ///< turbulent Prandl number */
+  TUR_MODEL tur_model; ///< LAM, CHEN, 100NU                                   
+  REAL  chen_a;   ///< coefficeint of Chen's zero euqation turbulence model   
+  REAL  Prt;      ///< turbulent Prandl number 
   REAL  Temp_opt; ///< operational temperature
+  REAL  Temp_i;   ///< intial value of temperature
   REAL  resu;     ///< residual of u 
   REAL  resv;      ///< residual of v 
   REAL  resw;      ///< residual of w 
@@ -207,6 +207,7 @@ typedef struct{
 
 typedef struct{
   int   NBOUT; ///< number of outflow boundary
+  int   NBUS; ///< number of heat souce cell
   REAL  qs;    ///< heat generation rate of heat source cell
   REAL  u_bc[200];///< u boundary value
   REAL  v_bc[200];///< v boundary value

@@ -7,5 +7,5 @@ void free_data (REAL **var);
 void free_index(int **BINDEX);
 
 void clear_data(PARA_DATA *para, REAL **var, int **BINDEX);
-
+void init_data(PARA_DATA *para, REAL **var, int **BINDEX);
  

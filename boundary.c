@@ -108,7 +108,7 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         //flagu=0 is inlet boundary
         if(flagu[FIX(i,j,k)]==0){
           psi[FIX(i,j,k)]= para->bc->u_bc[BINDEX[13][FIX(i,j,k)]]; 
-          if(fabs(psi[FIX(i,j,k)]>0.000001)) {
+          if(fabs(psi[FIX(i,j,k)]>0.0001)) {
             b[FIX(i+1,j,k)] += para->bc->um_bc[BINDEX[13][FIX(i,j,k)]]*
                   (gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
           }
@@ -127,7 +127,7 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         ii=max(i-1,0);
         if(flagu[FIX(ii,j,k)]==0){
           psi[FIX(ii,j,k)]= para->bc->u_bc[BINDEX[13][FIX(ii,j,k)]]; 
-          if(fabs(psi[FIX(ii,j,k)]>0.000001)) {
+          if(fabs(psi[FIX(ii,j,k)]>0.0001)) {
             b[FIX(ii-1,j,k)] += para->bc->um_bc[BINDEX[13][FIX(ii,j,k)]]*
                   (gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
           }
@@ -178,7 +178,7 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         if(flagp[FIX(i,j,k)]==0) continue; //heat source cell 
         if(flagv[FIX(i,j,k)]==0) {
           psi[FIX(i,j,k)]= para->bc->v_bc[BINDEX[14][FIX(i,j,k)]]; 
-          if(fabs(psi[FIX(i,j,k)]>0.000001)) {
+          if(fabs(psi[FIX(i,j,k)]>0.0001)) {
             b[FIX(i,j+1,k)] += para->bc->um_bc[BINDEX[14][FIX(i,j,k)]]*
                   (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
           }
@@ -193,7 +193,7 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         jj=max(j-1,0);
         if(flagv[FIX(i,jj,k)]==0) {
           psi[FIX(i,jj,k)]= para->bc->v_bc[BINDEX[14][FIX(i,jj,k)]];
-          if(fabs(psi[FIX(i,jj,k)]>0.000001)) {
+          if(fabs(psi[FIX(i,jj,k)]>0.0001)) {
             b[FIX(i,jj-1,k)] += para->bc->um_bc[BINDEX[14][FIX(i,jj,k)]]*
                   (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gz[FIX(i,j,k)]-gz[FIX(i,j,k-1)]);
           }
@@ -241,7 +241,7 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         if(flagp[FIX(i,j,k)]==0) continue;
         if(flagw[FIX(i,j,k)]==0) {
           psi[FIX(i,j,k)]= para->bc->w_bc[BINDEX[15][FIX(i,j,k)]]; 
-          if(fabs(psi[FIX(i,j,k)]>0.000001)) {
+          if(fabs(psi[FIX(i,j,k)]>0.0001)) {
             b[FIX(i,j,k+1)] += para->bc->um_bc[BINDEX[15][FIX(i,j,k)]]*
                   (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
           }
@@ -256,7 +256,7 @@ void set_bnd_vel(PARA_DATA *para, REAL **var, int var_type, REAL *psi, int **BIN
         kk=max(k-1,0);
         if(flagw[FIX(i,j,kk)]==0) {
           psi[FIX(i,j,kk)]= para->bc->w_bc[BINDEX[15][FIX(i,j,kk)]]; 
-          if(fabs(psi[FIX(i,j,kk)]>0.000001)) {
+          if(fabs(psi[FIX(i,j,kk)]>0.0001)) {
             b[FIX(i,j,kk-1)] += para->bc->um_bc[BINDEX[15][FIX(i,j,kk)]]*
                   (gx[FIX(i,j,k)]-gx[FIX(i-1,j,k)])*(gy[FIX(i,j,k)]-gy[FIX(i,j-1,k)]);
           }
@@ -1018,14 +1018,15 @@ void set_bnd_density(PARA_DATA *para, REAL **var, int var_type, REAL *psi,int **
   }
   
   //Assigning boundary condtions for heat source cell
-  for(it=indexmax+1;it<=indexmax_us;it++) {
-    i=BINDEX[0][it];
-    j=BINDEX[1][it];
-    k=BINDEX[2][it];
-    zone_num=BINDEX[16][FIX(i,j,k)];
+  if(para->bc->NBUS>0) {
+    for(it=indexmax+1;it<=indexmax_us;it++) {
+      i=BINDEX[0][it];
+      j=BINDEX[1][it];
+      k=BINDEX[2][it];
+      zone_num=BINDEX[16][FIX(i,j,k)];
 
-    b[FIX(i,j,k)] += para->bc->d_bc[zone_num]/rho;
-
+      b[FIX(i,j,k)] += para->bc->d_bc[zone_num]/rho;
+    }
   }
  
 

@@ -47,7 +47,7 @@ int read_max(PARA_DATA *para, REAL **var) {
   float Lx,Ly,Lz;
   char  string[400];
 
-  if( (file_params=fopen("input_displacement_li_coarse.cfd","r")) == NULL ) {
+  if( (file_params=fopen("input.cfd","r")) == NULL ) {
     fprintf(stderr,"Error:can not open error file!\n");
     return 0;
   }
@@ -102,7 +102,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   float CONCENT;
   float ZV;
   int restart;
-  float density,nu,cp,gravx,gravy,gravz,beta,trefmax,spec;
+  float density,nu,cp,gravx,gravy,gravz,beta,trefmax,temp_i,spec;
   float t_start,t_delta,t_total;
   int imax = para->geom->imax;
   int jmax = para->geom->jmax;
@@ -119,7 +119,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   REAL *flagp = var[FLAGP],*flagu = var[FLAGU];
   REAL *flagv = var[FLAGV],*flagw = var[FLAGW];
 
-  if( (file_params=fopen("input_displacement_li_coarse.cfd","r")) == NULL) {
+  if( (file_params=fopen("input.cfd","r")) == NULL) {
     fprintf(stderr,"Error:can not open error file!\n");
     return 0;
   }
@@ -337,6 +337,8 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   fgets(string, 400, file_params);
   sscanf(string,"%d",&NBUS); 
 
+  para->bc->NBUS=NBUS;
+
   if(NBUS !=0) {
     for(i=1;i<=NBUS;i++) {
       fgets(string, 400, file_params);
@@ -432,8 +434,8 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
                   &var_temp,&var_temp,
                   &var_temp,&var_temp,
                   &var_temp,&var_temp,
-                  &var_temp,&var_temp,
                   &Csolve,&Coutput,
+                  &var_temp,&var_temp,
                   &var_temp,&var_temp,
                   &var_temp,&var_temp,
                   &var_temp,&var_temp,
@@ -452,8 +454,8 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
 
   //reading fluid property.
   fgets(string, 400, file_params);
-  sscanf(string,"%f %f %f %f %f %f %f %f %f",&density,&nu,&cp,&gravx,
-                                            &gravy,&gravz,&beta,&trefmax,&spec);
+  sscanf(string,"%f %f %f %f %f %f %f %f %f %f",&density,&nu,&cp,&gravx,
+                                            &gravy,&gravz,&beta,&trefmax,&temp_i,&spec);
   para->prob->rho=density;
   para->prob->nu=nu;
   para->prob->cond=cp;
@@ -462,6 +464,7 @@ int read_input(PARA_DATA *para, REAL **var, int **BINDEX) {
   para->prob->gravz=gravz;
   para->prob->beta=beta;
   para->prob->Temp_opt=trefmax;
+  para->prob->Temp_i=temp_i;
   para->prob->spec=spec;
 
   if(gravx>0) para->prob->gravdir=GRAVX;

@@ -1,5 +1,5 @@
 
-void psi_conservation(PARA_DATA *para, REAL **var, REAL *psi,REAL *psi0,int **BINDEX);
+void psi_conservation(PARA_DATA *para, REAL **var, int var_type, REAL *psi,REAL *psi0,int **BINDEX);
 
 REAL outflow(PARA_DATA *para, REAL **var,  REAL *psi,  int **BINDEX);
 

@@ -306,6 +306,8 @@ int main() {
     printf("no file"); exit(1);
   }
 
+  init_data(&para,  var,BINDEX);
+
   mark_cell(&para, var,BINDEX);
 
   if(para.solv->read_file==1) read_data(&para,var);

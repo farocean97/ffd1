@@ -113,7 +113,7 @@ int write_Tecplot(PARA_DATA *para, REAL **var, char *name,int **BINDEX) {
         fprintf( file1, "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", x[FIX(i,j,k)], y[FIX(i,j,k)],
                z[FIX(i,j,k)],u0[FIX(i,j,k)],v0[FIX(i,j,k)],
                w0[FIX(i,j,k)],p0[FIX(i,j,k)],T0[FIX(i,j,k)],
-               var[DENS][FIX(i,j,k)]);   
+               var[DEN][FIX(i,j,k)]);   
       }
 
 
@@ -305,46 +305,40 @@ int write_SCI(PARA_DATA *para, REAL **var, char *name) {
   fprintf( file1, "\n");
 
   for(j=1;j<=jmax;j++)
-    for(i=1;i<=imax;i++)
-    {
-        fprintf( file1, "%d\t%d\n", i,j);
-   if(IPR==1)
-   {
-   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", p[FIX(i,j,k)]);   
-     fprintf( file1, "\n");
-   }
-   if(IU==1)
-   {
-   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", u[FIX(i,j,k)]);   
-     fprintf( file1, "\n");
-   }
-   if(IV==1)
-   {
-   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", v[FIX(i,j,k)]);   
-     fprintf( file1, "\n");
-   }
-   if(IW==1)
-   {
-   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", w[FIX(i,j,k)]);   
-     fprintf( file1, "\n");
-   }
+    for(i=1;i<=imax;i++) {
+      fprintf( file1, "%d\t%d\n", i,j);
+      if(IPR==1) {
+        for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", p[FIX(i,j,k)]);   
+        fprintf( file1, "\n");
+      }
 
-   if(IT==1)
-   {
-   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", T[FIX(i,j,k)]);   
-     fprintf( file1, "\n");
-   }
+      if(IU==1) {
+        for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", u[FIX(i,j,k)]); 
+        fprintf( file1, "\n");
+      }
+      
+      if(IV==1) {
+        for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", v[FIX(i,j,k)]); 
+        fprintf( file1, "\n");
+      }
+      if(IW==1) {
+        for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", w[FIX(i,j,k)]); 
+        fprintf( file1, "\n");
+      }
 
+      for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", T[FIX(i,j,k)]);  //turbulence intensity 
+      fprintf( file1, "\n");
 
-   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", T[FIX(i,j,k)]);  //turbulence intensity 
-     fprintf( file1, "\n");
+      if(IT==1) {
+        for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", T[FIX(i,j,k)]);   
+        fprintf( file1, "\n");
+      }
+      if(IC1==1){
+        for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", d[FIX(i,j,k)]); 
+        fprintf( file1, "\n");
+      } 
+
     }
-
-   if(IC1==1)
-   {
-   for(k=1;k<=kmax;k++)  fprintf( file1, "%e\t", d[FIX(i,j,k)]);   
-     fprintf( file1, "\n");
-   }
 
   fclose(file1);
   

@@ -103,7 +103,7 @@ void temp_step(PARA_DATA *para, REAL **var,int **BINDEX){
 
   if(para->prob->plume_mod==1) plume_thermal(para,var,BINDEX);
 
-  psi_conservation(para, var,T0,T,BINDEX);
+  psi_conservation(para, var,TEMP,T0,T,BINDEX);
 
   diffusion(para, var, TEMP, T, T0, BINDEX);
 
@@ -125,7 +125,7 @@ void den_step(PARA_DATA *para, REAL **var,int **BINDEX){
       
   set_bnd_density(para, var,DEN,den,BINDEX);
   advection(para, var, DEN,flagp, den0, den,BINDEX); 
-  psi_conservation(para, var,den0,den,BINDEX);
+  psi_conservation(para, var,DEN,den0,den,BINDEX);
   diffusion(para, var, DEN, den, den0,BINDEX); 
 
 
